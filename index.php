@@ -4,7 +4,17 @@ require_once('init.php');
 
 #DirectDB::aQuery("SHOW TABLES;");
 
-WgGesuchtReader::vRead();
+if (isset($_REQUEST['ad_html'])) {
+	$oAds = DirectDB::oSelectOne('ads', array('id' => intval($_REQUEST['ad_html'])));
+	$oHtml = DirectDB::oSelectOne('ads_html', array('id' => intval($oAds->html_id)));
+	$sHtml = $oHtml->html;
+	ODT::vDump(WgGesuchtReader::oParseAdHtml(null, $sHtml));
+	exit($sHtml);
+}
+
+if (isset($_REQUEST['fetch'])) {
+	WgGesuchtReader::vRead();
+}
 
 exit;
 

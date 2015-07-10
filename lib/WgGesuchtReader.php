@@ -16,6 +16,8 @@
 		
 		public static function vRead () {
 			
+			Curl::$oDefault->vSetCookieJarFile('store/cookie');
+			
 			$aDetailUrls = array();
 			$aListUrls = array(
 				#'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.0.0.0.html?filter=bb469e0d555c453d123cbe951feef700938d503a025e2e0a3a',
@@ -24,13 +26,21 @@
 			);
 			foreach ($aListUrls as $sListUrl) {
 				$sListHtml = str_replace('[[CODE]]', 'w' . 'g-g' . 'esucht', file_get_contents('examples/list_2.html'));
+				sleep(2);
+				$sListHtml = Curl::sGet($sListUrl);
 				$aDetailUrlsInList = self::aReadList($sListHtml);
 				$aDetailUrls = array_merge($aDetailUrls, $aDetailUrlsInList);
 			}
 			
 			$aAds = array();
+ODT::vDump($aDetailUrls);
 			foreach ($aDetailUrls as $sDetailUrl) {
 				$sDetailHtml = str_replace('[[CODE]]', 'w' . 'g-g' . 'esucht', file_get_contents('examples/detail_a.html'));
+				sleep(4);
+				$sDetailHtml = Curl::sGet($sDetailUrl);
+				sleep(2);
+				$sDetailHtml = Curl::sGet($sDetailUrl);
+				sleep(1);
 				$sTime = date('Y-m-d H:i:s');
 				$iHtmlID = Ad::iInsertHtml($sDetailUrl, $sDetailHtml, $sTime);
 				$oAd = Ad::oGetByUrl($sDetailUrl);
@@ -42,7 +52,7 @@
 				self::oParseAdHtml($oAd, $sDetailHtml);
 				$oAd->vSave();
 				$aAds []= $oAd;
-ODT::vExit($oAd->oData);
+#ODT::vExit($oAd->oData);
 			}
 			
 		}
@@ -167,6 +177,9 @@ ODT::vExit($oAd->oData);
 		public static function vInit () {
 			
 			self::$sDomain = 'ww' . 'w.w' . 'g-g' . 'esuch' . 't.de';
+			if (!file_exists(self::$sImagesFolder)) {
+				mkdir(self::$sImagesFolder, 0777, true);
+			}
 			
 		}
 		
