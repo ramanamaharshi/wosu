@@ -26,7 +26,6 @@
 		
 		
 		public function sGet ($sUrl, $sCookieJarFile = '[auto]') {
-ODT::vDump('sGet ' . $sUrl);
 			
 			$oInstance = isset($this) ? $this : self::$oDefault;
 			
@@ -44,7 +43,6 @@ ODT::vDump('sGet ' . $sUrl);
 				}
 				$sCookieJarFile = $oInstance->sCookieJarFile;
 			}
-ODT::vDump($sCookieJarFile);
 			
 			if ($sCookieJarFile) {
 				curl_setopt($oCurl, CURLOPT_COOKIEJAR, $sCookieJarFile);
