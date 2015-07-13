@@ -33,7 +33,7 @@ require('foreign/include_all.php');
 
 
 spl_autoload_register(function ($sClass) {
-	require_once('lib/' . $sClass . '.php');
+	require_once('lib/php/' . $sClass . '.php');
 	if (method_exists($sClass, 'vInit')) {
 		$sClass::vInit();
 	}
