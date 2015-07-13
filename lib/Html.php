@@ -34,7 +34,7 @@
 		
 		
 		
-		public static function vInclude ($sLocation, $sFile, $bOnce = true) {
+		public static function vInclude ($sFile, $sLocation = 'header', $bOnce = true) {
 			
 			self::$aIncludes[$sLocation] []= $sFile;
 			
@@ -73,7 +73,7 @@
 				
 				$aFiles = Utilitu::aListFiles(Utilitu::$sHtdocs . '/public/' . $sType, $sType);
 				foreach ($aFiles as $sFile) {
-					self::vInclude('header', '/' . $sFile);
+					self::vInclude('/' . $sFile);
 				}
 				
 			}

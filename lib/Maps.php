@@ -89,7 +89,7 @@ if (isset($_REQUEST['restructure'])) DirectDB::aQuery("DROP TABLE " . self::$sTa
 							var oOptions = ' . json_encode($aOptions) . ';
 							var aMarkers = ' . json_encode($aMarkers) . ';
 							
-							$("#map-canvas").vMakeMap(oOptions, aMarkers);
+							$("#map-canvas").oMakeMap(oOptions, aMarkers);
 							
 						}
 						
