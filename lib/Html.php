@@ -67,25 +67,16 @@
 		
 		
 		
-		public static function sFileToLink ($sFile) {
+		public static function vIncludeAllPublic () {
 			
-			if (!preg_match('#/#', $sFile)) {
-				if (!preg_match('#\.[^\.]+$#', $sFile)) {
-					$sFile = $sFile . '.js';
+			foreach (array('js', 'css') as $sType) {
+				
+				$aFiles = Utilitu::aListFiles(Utilitu::$sHtdocs . '/public/' . $sType, $sType);
+				foreach ($aFiles as $sFile) {
+					self::vInclude('header', '/' . $sFile);
 				}
-				if (preg_match('#\.js$#', $sFile)) {
-					if (file_exists(Utilitu::$sHtdocs . '/lib/js/' . $sFile)) {
-						$sFile = '/lib/js/' . $sFile;
-					}
-				}
-				if (preg_match('#\.css$#', $sFile)) {
-					if (file_exists(Utilitu::$sHtdocs . '/assets/css/' . $sFile)) {
-						$sFile = '/assets/css/' . $sFile;
-					}
-				}
+				
 			}
-			
-			return $sFile;
 			
 		}
 		
@@ -108,6 +99,31 @@
 			}
 			
 			return $sReturn;
+			
+		}
+		
+		
+		
+		
+		public static function sFileToLink ($sFile) {
+			
+			if (!preg_match('#/#', $sFile)) {
+				if (!preg_match('#\.[^\.]+$#', $sFile)) {
+					$sFile = $sFile . '.js';
+				}
+				if (preg_match('#\.js$#', $sFile)) {
+					if (file_exists(Utilitu::$sHtdocs . '/lib/js/' . $sFile)) {
+						$sFile = '/lib/js/' . $sFile;
+					}
+				}
+				if (preg_match('#\.css$#', $sFile)) {
+					if (file_exists(Utilitu::$sHtdocs . '/assets/css/' . $sFile)) {
+						$sFile = '/assets/css/' . $sFile;
+					}
+				}
+			}
+			
+			return $sFile;
 			
 		}
 		
@@ -155,6 +171,15 @@
 		public static function sMakePage () {
 			
 			return self::sMakeHeader() . self::$sContent . self::sMakeFooter();
+			
+		}
+		
+		
+		
+		
+		public static function vInit () {
+			
+			self::vIncludeAllPublic();
 			
 		}
 		

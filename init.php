@@ -29,11 +29,11 @@ function aListFiles ($sDir) {
 }
 
 
-require('lib/php/foreign/include_all.php');
+require('lib/foreign/include_all.php');
 
 
 spl_autoload_register(function ($sClass) {
-	require_once('lib/php/' . $sClass . '.php');
+	require_once('lib/' . $sClass . '.php');
 	if (method_exists($sClass, 'vInit')) {
 		$sClass::vInit();
 	}

@@ -13,6 +13,39 @@
 		
 		
 		
+		public static function aListFiles ($sDir, $sFileType = null, $bAbsolute = false) {
+			
+			$aFiles = array();
+			$aScanFiles = scandir($sDir);
+			
+			foreach ($aScanFiles as $sScanFile) {
+				if ($sScanFile == '..' || $sScanFile == '.') continue;
+				$sFile = $sDir . '/' . $sScanFile;
+				if (is_dir($sFile)) {
+					$aDirFiles = self::aListFiles($sFile, $sFileType, true);
+					foreach ($aDirFiles as $sDirFile) {
+						$aFiles []= $sDirFile;
+					}
+				} else {
+					if (!$sFileType || preg_match('#\.' . $sFileType . '$#', $sFile)) {
+						$aFiles []= $sFile;
+					}
+				}
+			}
+			
+			if (!$bAbsolute) {
+				foreach ($aFiles as $iNr => $sFile) {
+					$aFiles[$iNr] = str_replace(self::$sHtdocs . '/', '', $sFile);
+				}
+			}
+			
+			return $aFiles;
+			
+		}
+		
+		
+		
+		
 		public static function sConditionalHash ($sInput) {
 			
 			$sHash = $sInput;
@@ -73,7 +106,7 @@
 		
 		public static function vInit () {
 			
-			self::$sHtdocs = realpath(dirname(__FILE__) . '/../..');
+			self::$sHtdocs = realpath(dirname(__FILE__) . '/..');
 			
 		}
 		
