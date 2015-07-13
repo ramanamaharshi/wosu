@@ -29,7 +29,7 @@ function aListFiles ($sDir) {
 }
 
 
-require('foreign/include_all.php');
+require('lib/php/foreign/include_all.php');
 
 
 spl_autoload_register(function ($sClass) {
