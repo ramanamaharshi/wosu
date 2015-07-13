@@ -2,6 +2,13 @@
 
 require_once('init.php');
 
+Html::vInclude('header', 'maps.js');
+
+Html::vAddContent('test');
+
+echo Html::sMakePage();
+exit;
+
 #DirectDB::aQuery("SHOW TABLES;");
 
 if (isset($_REQUEST['ad_html'])) {

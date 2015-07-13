@@ -8,6 +8,11 @@
 		
 		
 		
+		public static $sHtdocs = null;
+		
+		
+		
+		
 		public static function sConditionalHash ($sInput) {
 			
 			$sHash = $sInput;
@@ -60,6 +65,15 @@
 		public static function sGetHtdocs () {
 			
 			return $GLOBALS['htdocs'];
+			
+		}
+		
+		
+		
+		
+		public static function vInit () {
+			
+			self::$sHtdocs = realpath(dirname(__FILE__) . '/../..');
 			
 		}
 		

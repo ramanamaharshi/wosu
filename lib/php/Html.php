@@ -8,30 +8,124 @@
 		
 		
 		
-		public static function sMakeHeader ($aJsFiles = array(), $aCssFiles = array(), $sAdditionalHtml = '', $sTitle = '') {
+		private static $sTitle = '';
+		private static $sContent = '';
+		private static $aIncludes = array('header' => array(), 'footer' => array());
+		private static $aAdditionalHtml = array('header' => array(), 'footer' => array());
+		
+		
+		
+		
+		public static function vSetTitle ($sTitle) {
 			
-			$aJsIncludes = array();
-			foreach ($aJsFiles as $sJsFile) {
-				$aJsIncludes []= self::sMakeCssInclude($sJsFile);
+			self::$sTitle = $sTitle;
+			
+		}
+		
+		
+		
+		
+		public static function vAddContent ($sContent) {
+			
+			self::$sContent .= $sContent;
+			
+		}
+		
+		
+		
+		
+		public static function vInclude ($sLocation, $sFile, $bOnce = true) {
+			
+			self::$aIncludes[$sLocation] []= $sFile;
+			
+		}
+		
+		
+		
+		
+		public static function vAddHtml ($sLocation, $sHtml) {
+			
+			self::$aAdditionalHtml[$sLocation] []= $sHtml;
+			
+		}
+		
+		
+		
+		
+		public static function sMakeAdditionalHtml ($sLocation) {
+			
+			$sAdditionalHtml = implode("\n", self::$aAdditionalHtml[$sLocation]);
+			
+			foreach (self::$aIncludes[$sLocation] as $sInclude) {
+				$sAdditionalHtml .= self::sMakeIncludeHtml($sInclude);
 			}
 			
-			$aCssIncludes = array();
-			foreach ($aCssFiles as $sCssFile) {
-				$aCssIncludes []= self::sMakeCssInclude($sCssFile);
+			return $sAdditionalHtml;
+			
+		}
+		
+		
+		
+		
+		public static function sFileToLink ($sFile) {
+			
+			if (!preg_match('#/#', $sFile)) {
+				if (!preg_match('#\.[^\.]+$#', $sFile)) {
+					$sFile = $sFile . '.js';
+				}
+				if (preg_match('#\.js$#', $sFile)) {
+					if (file_exists(Utilitu::$sHtdocs . '/lib/js/' . $sFile)) {
+						$sFile = '/lib/js/' . $sFile;
+					}
+				}
+				if (preg_match('#\.css$#', $sFile)) {
+					if (file_exists(Utilitu::$sHtdocs . '/assets/css/' . $sFile)) {
+						$sFile = '/assets/css/' . $sFile;
+					}
+				}
 			}
+			
+			return $sFile;
+			
+		}
+		
+		
+		
+		
+		public static function sMakeIncludeHtml ($sLink, $sFileType = null) {
+			
+			$sReturn = null;
+			
+			$sLink = self::sFileToLink($sLink);
+			
+			if (!$sFileType) $sFileType = Utilitu::sPregRead($sLink, '#\.([^\.]+)$#');
+			
+			if ($sFileType == 'js') {
+				$sReturn = '<script type="text/javascript" src="' . htmlspecialchars($sLink) . '"></script>';
+			}
+			if ($sFileType == 'css') {
+				$sReturn = '<link rel="stylesheet" type="text/css" media="all" href="' . htmlspecialchars($sLink) . '" />';
+			}
+			
+			return $sReturn;
+			
+		}
+		
+		
+		
+		
+		public static function sMakeHeader () {
 			
 			$sHeader = trim('
 				<!doctype html>
 				<html>
 					<head>
 						<meta charset="UTF-8">
-						<title>' . $sTitle . '</title>
-						<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+						<title>' . self::$sTitle . '</title>
 						<link rel="shortcut icon" href="/favicon.ico" />
+						<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
 						<meta name="robots" content="noindex,follow" />
-						' . implode("\n", $aCssIncludes) . '
-						' . implode("\n", $aJsIncludes) . '
-						' . $sAdditionalHtml . '
+						' . self::sMakeAdditionalHtml('header') . '
 					</head>
 					<body>
 			');
@@ -43,21 +137,10 @@
 		
 		
 		
-		public static  function sMakeFooter ($aJsFiles = array(), $aCssFiles = array()) {
-			
-			$aJsIncludes = array();
-			foreach ($aJsFiles as $sJsFile) {
-				$aJsIncludes []= self::sMakeCssInclude($sJsFile);
-			}
-			
-			$aCssIncludes = array();
-			foreach ($aCssFiles as $sCssFile) {
-				$aCssIncludes []= self::sMakeCssInclude($sCssFile);
-			}
+		public static function sMakeFooter () {
 			
 			$sFooter = '
-						' . implode("\n", $aCssIncludes) . '
-						' . implode("\n", $aJsIncludes) . '
+						' . self::sMakeAdditionalHtml('footer') . '
 					</body>
 				</html>
 			';
@@ -69,31 +152,9 @@
 		
 		
 		
-		public static function sMakeCssInclude ($sCssFile) {
+		public static function sMakePage () {
 			
-			$sLink = self::sFileToLink($sCssFile);
-			$sCssInclude = '<link rel="stylesheet" type="text/css" media="all" href="' . htmlspecialchars($sLink) . '" />';
-			return $sCssInclude;
-			
-		}
-		
-		
-		
-		
-		public static function sMakeJsInclude ($sJsFile) {
-			
-			$sLink = self::sFileToLink($sJsFile);
-			$sJsInclude = '<script type="text/javascript" src="' . htmlspecialchars($sLink) . '"></script>';
-			return $sJsInclude;
-			
-		}
-		
-		
-		
-		
-		public static function sFileToLink ($sFile) {
-			
-			return $sFile;
+			return self::sMakeHeader() . self::$sContent . self::sMakeFooter();
 			
 		}
 		
