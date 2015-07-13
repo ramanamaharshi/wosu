@@ -19,7 +19,7 @@
 			
 			$oAddress = DirectDB::oSelectOne(self::$sTable, array('address_hash' => $sAddressHash));
 			if (!$oAddress) {
-				$sResponse = Curl::sGet('http://maps.google.com/maps/api/geocode/json?address=52062%20B%C3%BCchel%2011&sensor=false');
+				$sResponse = Curl::sGet('http://maps.google.com/maps/api/geocode/json?address=' . urlencode($sAddress) . '&sensor=false');
 				$oResponse = json_decode($sResponse);
 				$oFirstResult = $oResponse->results[0];
 				$oFRC = $oFirstResult->geometry->location;
@@ -58,6 +58,68 @@ if (isset($_REQUEST['restructure'])) DirectDB::aQuery("DROP TABLE " . self::$sTa
 					PRIMARY KEY (`address_hash`)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 			");
+			
+		}
+		
+		
+		
+		
+		public static function sMakeMapHtml ($mCoords, $aOptions = array(), $aMarkers = array()) {
+			
+			$aCoords = explode(',', $mCoords);
+			$aCoords = array(
+				'nLat' => floatval($aCoords[0]),
+				'nLon' => floatval($aCoords[1]),
+			);
+			
+			$sMap = '
+				
+				<style>
+					html, body, #map-canvas {
+						height: 100%;
+						margin: 0;
+						padding: 0;
+					}
+				</style>
+				
+				<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true"></script>
+				
+				<script>
+					
+					function initialize() {
+						
+						var oCoords = ' . json_encode($aCoords) . ';
+						var oOptions = ' . json_encode($aOptions) . ';
+						var aMarkers = ' . json_encode($aMarkers) . ';
+						
+						oOptions.center = new google.maps.LatLng(oCoords.nLat,oCoords.nLon);
+						
+						if (typeof oOptions.zoom) oOptions.zoom = 13
+						//if (oOptions.type == \'terrain\') {
+						//	oOptions.mapTypeId = google.maps.MapTypeId.TERRAIN;
+						//}
+						
+						var map = new google.maps.Map(document.getElementById(\'map-canvas\'), oOptions);
+						for (var iM = 0; iM < aMarkers.length; iM ++) {
+							var oMarker = aMarkers[iM];
+							new google.maps.Marker({
+								title: oMarker.sTitle,
+								position: new google.maps.LatLng(oMarker.nLat,oMarker.nLon),
+								map: map,
+							});
+						}
+						
+					}
+					
+					google.maps.event.addDomListener(window, \'load\', initialize);
+					
+				</script>
+				
+				<div id="map-canvas"></div>
+				
+			';
+			
+			return $sMap;
 			
 		}
 		

@@ -94,6 +94,7 @@
 		
 		
 		
+		
 		public static function iInsertHtml ($sUrl, $sContent, $sFetched = null) {
 			
 			if (!$sFetched) $sFetched = date('Y-m-d H:i:s');
@@ -128,6 +129,7 @@ if (isset($_REQUEST['restructure'])) {
 					html_id int(9),
 					domain_hash varchar(32),
 					url_hash varchar(32),
+					list varchar(32),
 					created datetime,
 					changed datetime,
 					fetched datetime,
@@ -171,6 +173,7 @@ public $oData = array(
 			'oPage' => array(
 				'sDomain' => null,
 				'sUrl' => null,
+				'sListID' => null,
 				'sCreated' => null,
 				'sChanged' => null,
 				'sFetched' => null,
