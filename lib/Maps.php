@@ -64,21 +64,15 @@ if (isset($_REQUEST['restructure'])) DirectDB::aQuery("DROP TABLE " . self::$sTa
 		
 		
 		
-		public static function sMakeMapHtml ($mCoords, $aOptions = array(), $aMarkers = array()) {
-			
-			$aCoords = explode(',', $mCoords);
-			$aCoords = array(
-				'nLat' => floatval($aCoords[0]),
-				'nLon' => floatval($aCoords[1]),
-			);
+		public static function sMakeMapHtml ($aOptions = array(), $aMarkers = array()) {
 			
 			$sMap = '
 				
 				<style>
 					html, body, #map-canvas {
 						height: 100%;
-						margin: 0;
 						padding: 0;
+						margin: 0;
 					}
 				</style>
 				
@@ -86,32 +80,48 @@ if (isset($_REQUEST['restructure'])) DirectDB::aQuery("DROP TABLE " . self::$sTa
 				
 				<script>
 					
-					function initialize() {
+					//<[CDATA[
+					
+					(function(){
 						
-						var oCoords = ' . json_encode($aCoords) . ';
-						var oOptions = ' . json_encode($aOptions) . ';
-						var aMarkers = ' . json_encode($aMarkers) . ';
-						
-						oOptions.center = new google.maps.LatLng(oCoords.nLat,oCoords.nLon);
-						
-						if (typeof oOptions.zoom) oOptions.zoom = 13
-						//if (oOptions.type == \'terrain\') {
-						//	oOptions.mapTypeId = google.maps.MapTypeId.TERRAIN;
-						//}
-						
-						var map = new google.maps.Map(document.getElementById(\'map-canvas\'), oOptions);
-						for (var iM = 0; iM < aMarkers.length; iM ++) {
-							var oMarker = aMarkers[iM];
-							new google.maps.Marker({
-								title: oMarker.sTitle,
-								position: new google.maps.LatLng(oMarker.nLat,oMarker.nLon),
-								map: map,
-							});
+						function initialize() {
+							
+							var oOptions = ' . json_encode($aOptions) . ';
+							var aMarkers = ' . json_encode($aMarkers) . ';
+							
+							if (typeof oOptions.zoom == "undefined") {
+								oOptions.zoom = 13
+							}
+							if (typeof oOptions.center != "undefined") {
+								if (typeof oOptions.center == "string") {
+									oOptions.center = oOptions.center.split(",");
+								}
+								if (typeof oOptions == "object" && typeof oOptions[0] != "undefined") {
+									oOptions.center = {nLat: oOptions.center[0], nLon: oOptions.center[1]}
+								}
+								oOptions.center = new google.maps.LatLng(oOptions.center.nLat , oOptions.center.nLon);
+							}
+							if (typeof oOptions.type != \'undefined\') {
+								oOptions.mapTypeId = google.maps.MapTypeId[oOptions.type.toUpperCase()];
+							}
+							
+							var map = new google.maps.Map(document.getElementById(\'map-canvas\'), oOptions);
+							for (var iM = 0; iM < aMarkers.length; iM ++) {
+								var oMarker = aMarkers[iM];
+								new google.maps.Marker({
+									title: oMarker.sTitle,
+									position: new google.maps.LatLng(oMarker.nLat,oMarker.nLon),
+									map: map,
+								});
+							}
+							
 						}
 						
-					}
+						google.maps.event.addDomListener(window, \'load\', initialize);
+						
+					})();
 					
-					google.maps.event.addDomListener(window, \'load\', initialize);
+					//]]>
 					
 				</script>
 				
