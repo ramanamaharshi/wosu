@@ -1,6 +1,6 @@
 <?php
 	
-	require_once('init.php');
+	require_once('../init.php');
 	
 #$aGeoCodes = DirectDB::aSelect('geocode_cache');
 #foreach ($aGeoCodes as $oGeoCode) {
@@ -23,10 +23,11 @@
 	}
 	$aOptions = array(
 		'zoom' => 13,
-		'type' => 'terrain',
+		'type' => 'satelite',
+		'center' => '50.7753222,6.0838673',
 	);
 	
-	$sMapHtml = Maps::sMakeMapHtml('50.7753222,6.0838673', $aOptions, $aMarkers);
+	$sMapHtml = Maps::sMakeMapHtml($aOptions, $aMarkers);
 	$sContent = '<h1>Karte</h1>' . $sMapHtml;
 	
 	$sHeader = Html::sMakeHeader(array(), array());

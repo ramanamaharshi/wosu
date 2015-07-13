@@ -89,31 +89,7 @@ if (isset($_REQUEST['restructure'])) DirectDB::aQuery("DROP TABLE " . self::$sTa
 							var oOptions = ' . json_encode($aOptions) . ';
 							var aMarkers = ' . json_encode($aMarkers) . ';
 							
-							if (typeof oOptions.zoom == "undefined") {
-								oOptions.zoom = 13
-							}
-							if (typeof oOptions.center != "undefined") {
-								if (typeof oOptions.center == "string") {
-									oOptions.center = oOptions.center.split(",");
-								}
-								if (typeof oOptions == "object" && typeof oOptions[0] != "undefined") {
-									oOptions.center = {nLat: oOptions.center[0], nLon: oOptions.center[1]}
-								}
-								oOptions.center = new google.maps.LatLng(oOptions.center.nLat , oOptions.center.nLon);
-							}
-							if (typeof oOptions.type != \'undefined\') {
-								oOptions.mapTypeId = google.maps.MapTypeId[oOptions.type.toUpperCase()];
-							}
-							
-							var map = new google.maps.Map(document.getElementById(\'map-canvas\'), oOptions);
-							for (var iM = 0; iM < aMarkers.length; iM ++) {
-								var oMarker = aMarkers[iM];
-								new google.maps.Marker({
-									title: oMarker.sTitle,
-									position: new google.maps.LatLng(oMarker.nLat,oMarker.nLon),
-									map: map,
-								});
-							}
+							$("#map-canvas").vMakeMap(oOptions, aMarkers);
 							
 						}
 						
