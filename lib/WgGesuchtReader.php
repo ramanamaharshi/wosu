@@ -30,19 +30,22 @@
 			
 			$aAds = array();
 			foreach ($aDetailUrls as $sDetailUrl) {
-				$sDetailHtml = str_replace('[[CODE]]', 'w' . 'g-g' . 'esucht', file_get_contents('examples/detail_a.html'));
+				
 				$sTime = date('Y-m-d H:i:s');
+				$sDetailHtml = str_replace('[[CODE]]', 'w' . 'g-g' . 'esucht', file_get_contents('examples/detail_a.html'));
+				
 				$iHtmlID = Ad::iInsertHtml($sDetailUrl, $sDetailHtml, $sTime);
 				$oAd = Ad::oGetByUrl($sDetailUrl);
 				if (!$oAd) $oAd = new Ad();
+				$aAds []= $oAd;
+				
 				$oAd->oPage->sDomain = self::$sDomain;
 				$oAd->oPage->sUrl = $sDetailUrl;
 				$oAd->oPage->sFetched = $sTime;
 				$oAd->oPage->iHtmlID = $iHtmlID;
 				self::oParseAdHtml($oAd, $sDetailHtml);
 				$oAd->vSave();
-				$aAds []= $oAd;
-ODT::vExit($oAd->oData);
+				
 			}
 			
 		}
