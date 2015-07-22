@@ -44,9 +44,16 @@
 		
 		
 		
-		public static function vInit () {
+		public static function vWipeDatabase () {
 			
-if (isset($_REQUEST['restructure'])) DirectDB::aQuery("DROP TABLE " . self::$sTable . ";");
+			DirectDB::aQuery("DROP TABLE " . self::$sTable . ";");
+			
+		}
+		
+		
+		
+		
+		public static function vInit () {
 			
 			DirectDB::aQuery("
 				CREATE TABLE IF NOT EXISTS `" . self::$sTable . "` (

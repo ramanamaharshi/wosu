@@ -1,4 +1,3 @@
-
 (function($){
 	
 	
@@ -29,6 +28,8 @@
 	
 	
 	$.fn.oMakeMap = function (oOptions, aMarkers) {
+		
+		if (typeof aMarkers == 'undefined') aMarkers = [];
 		
 		var jThis = $(this);
 		
@@ -62,40 +63,7 @@
 			
 			var oMarker = aMarkers[iM];
 			
-			oMarker.map = oMap;
-			if (typeof oMarker.position != 'undefined') {
-				oMarker.position = oParsePosition(oMarker.position);
-			}
-			if (typeof oMarker.icon != 'undefined') {
-				if (typeof oMarker.icon.bounds != 'undefined') {
-					oMarker.icon.origin = [oMarker.icon.bounds[0], oMarker.icon.bounds[1]];
-					oMarker.icon.size = [oMarker.icon.bounds[2], oMarker.icon.bounds[3]];
-				}
-				var oIconAttrs = {scaledSize: 'Size', origin: 'Point', size: 'Size', anchor: 'Point'};
-				for (var sAttr in oIconAttrs) {
-					var sClass = oIconAttrs[sAttr];
-					if (typeof oMarker.icon[sAttr] != 'undefined' && !(oMarker.icon[sAttr] instanceof google.maps[sClass])) {
-						oMarker.icon[sAttr] = new google.maps[sClass](oMarker.icon[sAttr][0],oMarker.icon[sAttr][1]);
-					}
-				}
-			}
-			
-			oMarker.oMarker = new google.maps.Marker(oMarker);
-			
-			oMarker.oMarker.oBindings = {};
-			oMarker.oMarker.vBind = function (sEvent, fCallback) {
-				var gMarker = oMarker.oMarker;
-				if (typeof gMarker.oBindings[sEvent] == 'undefined') {
-					gMarker.oBindings[sEvent] = [];
-					google.maps.event.addListener(gMarker, sEvent, function(){
-						for (var iB = 0; iB < gMarker.oBindings[sEvent].length; iB ++) {
-							var f = gMarker.oBindings[sEvent][iB];
-							f.call(oMarker, sEvent, arguments);
-						}
-					});
-				}
-				gMarker.oBindings[sEvent].push(fCallback);
-			};
+			vAddMarker(oMap, oMarker);
 			
 		})(); }
 		
@@ -104,6 +72,53 @@
 		return oMap;
 		
 	};
+	
+	
+	
+	
+	window.vAddMarker = function (oMap, oMarker) {
+		
+		oMarker.map = oMap;
+		
+		if (typeof oMarker.position != 'undefined') {
+			oMarker.position = oParsePosition(oMarker.position);
+		}
+		if (typeof oMarker.icon != 'undefined') {
+			var oIcon = oMarker.icon;
+			if (typeof oIcon.bounds != 'undefined') {
+				if (typeof oIcon.scale != 'undefined' && typeof oIcon.scaledSize == 'undefined') {
+					oIcon.scaledSize = oIcon.scale;
+				}
+				oIcon.origin = [oIcon.bounds[0], oIcon.bounds[1]];
+				oIcon.size = [oIcon.bounds[2], oIcon.bounds[3]];
+			}
+			var oIconAttrs = {scaledSize: 'Size', origin: 'Point', size: 'Size', anchor: 'Point'};
+			for (var sAttr in oIconAttrs) {
+				var sClass = oIconAttrs[sAttr];
+				if (typeof oIcon[sAttr] != 'undefined' && !(oIcon[sAttr] instanceof google.maps[sClass])) {
+					oIcon[sAttr] = new google.maps[sClass](oIcon[sAttr][0],oIcon[sAttr][1]);
+				}
+			}
+		}
+		
+		oMarker.oMarker = new google.maps.Marker(oMarker);
+		
+		oMarker.oMarker.oBindings = {};
+		oMarker.oMarker.vBind = function (sEvent, fCallback) {
+			var gMarker = oMarker.oMarker;
+			if (typeof gMarker.oBindings[sEvent] == 'undefined') {
+				gMarker.oBindings[sEvent] = [];
+				google.maps.event.addListener(gMarker, sEvent, function(){
+					for (var iB = 0; iB < gMarker.oBindings[sEvent].length; iB ++) {
+						var f = gMarker.oBindings[sEvent][iB];
+						f.call(oMarker, sEvent, arguments);
+					}
+				});
+			}
+			gMarker.oBindings[sEvent].push(fCallback);
+		};
+		
+	}
 	
 	
 	

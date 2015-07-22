@@ -89,7 +89,7 @@
 			
 			$sLink = self::sFileToLink($sLink);
 			
-			if (!$sFileType) $sFileType = Utilitu::sPregRead($sLink, '#\.([^\.]+)$#');
+			if (!$sFileType) $sFileType = Utilitu::sPregRead('#\.([^\.]+)$#', $sLink);
 			
 			if ($sFileType == 'js') {
 				$sReturn = '<script type="text/javascript" src="' . htmlspecialchars($sLink) . '"></script>';

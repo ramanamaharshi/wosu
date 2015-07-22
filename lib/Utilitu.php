@@ -74,10 +74,27 @@
 		
 		
 		
-		public static function sPregRead ($sString, $sRegExp, $sReadKey = 1) {
+		public static function sPregRead ($sRegExp, $sString, $sReadKey = '[auto]') {
+			
+			$sReturn = null;
 			
 			preg_match($sRegExp, $sString, $aMatches);
-			return $aMatches[$sReadKey];
+			if ($sReadKey == '[auto]') {
+				$sReturn = isset($aMatches[1]) = $aMatches[1] : $aMatches[0];
+			} else {
+				if (isset($aMatches[$sReadKey])) $sReturn = $aMatches[$sReadKey];
+			}
+			
+			return $sReturn;
+			
+		}
+		
+		
+		
+		
+		public static function sUrlToDomain ($sUrl) {
+			
+			return Utilitu::sPregRead('#^[a-z]+://([^\.]+\.)*(?<domain>[^\.]+\.[^\.]+)($|/)#', $sUrl, 'domain');
 			
 		}
 		
@@ -89,6 +106,16 @@
 			preg_match('/^(\d+)\.(\d+) (\d+)$/', microtime(), $aMatches);
 			
 			return $aMatches[3] . $aMatches[2];
+			
+		}
+		
+		
+		
+		
+		public static function vReturnJson ($mData) {
+			
+			header('Content-Type: application/json');
+			exit(json_encode($mData));
 			
 		}
 		

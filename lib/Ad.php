@@ -17,11 +17,26 @@
 		
 		
 		
-		public static function oGet ($mWhere, $bSingle = true) {
+		public static function oGet ($mWhere = array()) {
+			
+			$oReturn = null;
 			
 			if (!is_array($mWhere) && !is_object($mWhere)) {
 				$mWhere = array('id' => intval($mWhere));
 			}
+			
+			$aAds = self::aGet($mWhere);
+			
+			if (isset($aAds[0])) $oReturn = $aAds[0];
+			
+			return $oReturn;
+			
+		}
+		
+		
+		
+		
+		public static function aGet ($mWhere = array()) {
 			
 			$aResult = DirectDB::aSelect('ads', $mWhere);
 			
@@ -30,13 +45,7 @@
 				$aAds []= new Ad($oRow);
 			}
 			
-			if ($bSingle) {
-				$mReturn = isset($aAds[0]) ? $aAds[0] : null;
-			} else {
-				$mReturn = $aAds;
-			}
-			
-			return $mReturn;
+			return $aAds;
 			
 		}
 		
@@ -81,11 +90,10 @@
 				'created' => $this->oPage->sCreated,
 				'changed' => $this->oPage->sChanged,
 				'fetched' => $this->oPage->sFetched,
-				'warm' => $this->oPrice->iWarm,
 			);
 			
 			if ($this->iID) {
-				DirectDB::bUpdate('ads', $aData, array('id' => $this->iID));
+				DirectDB::bUpdate('ads', $aData, $this->iID);
 			} else {
 				$this->iID = DirectDB::iInsert('ads', $aData);
 			}
@@ -95,11 +103,15 @@
 		
 		
 		
-		public static function iInsertHtml ($sUrl, $sContent, $sFetched = null) {
+		public static function iInsertHtml ($sList, $sUrl, $sContent, $sFetched = null) {
 			
 			if (!$sFetched) $sFetched = date('Y-m-d H:i:s');
 			
+			$sDomain = Utilitu::sUrlToDomain($sUrl);
+			
 			$aInsert = array(
+				'list' => Utilitu::sConditionalHash($sList),
+				'domain_hash' => Utilitu::sConditionalHash($sDomain),
 				'url_hash' => Utilitu::sConditionalHash($sUrl),
 				'html_hash' => md5($sContent),
 				'html' => $sContent,
@@ -115,37 +127,52 @@
 		
 		
 		
+		public static function oGetHtml ($iHtmlID) {
+			
+			return DirectDB::oSelectOne('ads_html', $iHtmlID));
+			
+		}
+		
+		
+		
+		
+		public static function vWipeDatabase () {
+			if (isset($_REQUEST['restructure'])) {
+				DirectDB::aQuery("DROP TABLE ads;");
+				DirectDB::aQuery("DROP TABLE ads_html;");
+			}
+		}
+		
+		
+		
+		
 		public static function vInit () {
 			
-if (isset($_REQUEST['restructure'])) {
-	DirectDB::aQuery("DROP TABLE ads;");
-	DirectDB::aQuery("DROP TABLE ads_html;");
-}
-			
 			DirectDB::aQuery("
-				CREATE TABLE IF NOT EXISTS ads (
+				CREATE TABLE IF NOT EXISTS ads_html (
 					id int(9) NOT NULL AUTO_INCREMENT,
-					json_data text,
-					html_id int(9),
+					fetched datetime,
+					parsed tinyint(1),
+					list varchar(32),
 					domain_hash varchar(32),
 					url_hash varchar(32),
-					list varchar(32),
-					created datetime,
-					changed datetime,
-					fetched datetime,
-					warm int(9),
-					INDEX (url_hash),
+					html_hash varchar(32),
+					html text,
 					PRIMARY KEY (id)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 			");
 			
 			DirectDB::aQuery("
-				CREATE TABLE IF NOT EXISTS ads_html (
+				CREATE TABLE IF NOT EXISTS ads (
 					id int(9) NOT NULL AUTO_INCREMENT,
+					html_id int(9),
+					domain_hash varchar(32),
 					url_hash varchar(32),
-					html_hash varchar(32),
-					html text,
+					created datetime,
+					changed datetime,
 					fetched datetime,
+					json_data text,
+					INDEX (url_hash),
 					PRIMARY KEY (id)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 			");

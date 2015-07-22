@@ -273,6 +273,10 @@
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
+			if (is_numeric($mWhere)) {
+				$mWhere = array('id' => $mWhere);
+			}
+			
 			if (is_array($mWhere)) {
 				$sWhere = "";
 				$bFirst = true;

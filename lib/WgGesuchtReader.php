@@ -18,42 +18,34 @@
 			
 			Curl::$oDefault->vSetCookieJarFile('store/cookie');
 			
-			$aDetailUrls = array();
+			$aDetailUrlsByList = array();
 			$aListUrls = array(
 				'wg0' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.0.0.0.html?filter=bb469e0d555c453d123cbe951feef700938d503a025e2e0a3a',
 				'wg1' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.1.0.0.html',
 				'wg2' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.2.0.0.html',
 			);
-			foreach ($aListUrls as $sListUrl) {
-				$sListHtml = str_replace('[[CODE]]', 'w' . 'g-g' . 'esucht', file_get_contents('examples/list_2.html'));
+			foreach ($aListUrls as $sListID => $sListUrl) {
 				sleep(2);
 				$sListHtml = Curl::sGet($sListUrl);
-				$aDetailUrlsInList = self::aReadList($sListHtml);
-				$aDetailUrls = array_merge($aDetailUrls, $aDetailUrlsInList);
+				$aDetailUrlsByList[$sListID] = self::aReadList($sListHtml);
 			}
 			
-			$aAds = array();
-			foreach ($aDetailUrls as $sDetailUrl) {
-				$sTime = date('Y-m-d H:i:s');
+			foreach ($aDetailUrlsByList as $sListID => $aDetailUrls) {
 				
-				$sDetailHtml = str_replace('[[CODE]]', 'w' . 'g-g' . 'esucht', file_get_contents('examples/detail_a.html'));
-				sleep(4);
-				$sDetailHtml = Curl::sGet($sDetailUrl);
-				sleep(2);
-				$sDetailHtml = Curl::sGet($sDetailUrl);
-				sleep(1);
-				
-				$iHtmlID = Ad::iInsertHtml($sDetailUrl, $sDetailHtml, $sTime);
-				$oAd = Ad::oGetByUrl($sDetailUrl);
-				if (!$oAd) $oAd = new Ad();
-				$aAds []= $oAd;
-				
-				$oAd->oPage->sDomain = self::$sDomain;
-				$oAd->oPage->sUrl = $sDetailUrl;
-				$oAd->oPage->sFetched = $sTime;
-				$oAd->oPage->iHtmlID = $iHtmlID;
-				self::oParseAdHtml($oAd, $sDetailHtml);
-				$oAd->vSave();
+				foreach ($aDetailUrls as $sDetailUrl) {
+					
+					$sTime = date('Y-m-d H:i:s');
+					
+					sleep(4);
+					$sDetailHtml = Curl::sGet($sDetailUrl);
+					sleep(2);
+					$sDetailHtml = Curl::sGet($sDetailUrl);
+					sleep(1);
+					
+					$iHtmlID = Ad::iInsertHtml($sListID, $sDetailUrl, $sDetailHtml, $sTime);
+					$oAd = self::oParseAdHtml($iHtmlID);
+					
+				}
 				
 			}
 			
@@ -86,15 +78,18 @@
 		
 		
 		
-		public static function oParseAdHtml ($oAd, $sDetailHtml) {
+		public static function oParseAdHtml ($iHtmlID) {
 			
+			$oHtml = Ad::oGetHtml($iHtmlID);
+			
+			$oAd = Ad::oGetByUrl($oHtml->url);
 			if (!$oAd) $oAd = new Ad();
 			
-			$oDom = HtmlDomParser::str_get_html($sDetailHtml);
+			$oDom = HtmlDomParser::str_get_html($oHtml->html);
 			$oMainInfo = $oDom->find('.panel-body > .row', 0);
 			
 			$sOrange = $oDom->find('.headline-key-facts', 0)->innertext;
-			$sSquareMeters = Utilitu::sPregRead($sOrange, '#Größe: ([,\d]+)m#');
+			$sSquareMeters = Utilitu::sPregRead($sOrange, '#röße: ([,\d]+)m#');
 			$oAd->oPhysical->nSquareMeters = floatval($sSquareMeters);
 			
 			$aKostenRows = $oMainInfo->find('.col-sm-5 tbody tr');
@@ -168,6 +163,16 @@
 			}
 			
 			/// TODO: oContact
+			
+			$oAd->oPage->sDomain = $oHtml->domain;
+			$oAd->oPage->sUrl = $oHtml->url;
+			$oAd->oPage->sFetched = $oHtml->fetched;
+			$oAd->oPage->iHtmlID = $oHtml->id;
+			$oAd->oPage->sListID = $oHtml->list;
+			
+			$oAd->vSave();
+			
+			DirectDB::bUpdate('ads_html', $oHtml->id, array('parsed' => true));
 			
 			return $oAd;
 			
