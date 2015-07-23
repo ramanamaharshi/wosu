@@ -46,13 +46,19 @@
 		
 		
 		
-		public static function sConditionalHash ($sInput) {
+		public static function sPregRead ($sRegExp, $sString, $sReadKey = '[auto]') {
 			
-			$sHash = $sInput;
+			$sReturn = null;
 			
-			if (strlen($sHash) > 32) $sHash = md5($sHash);
+			if (preg_match($sRegExp, $sString, $aMatches)) {
+				if ($sReadKey == '[auto]') {
+					$sReturn = isset($aMatches[1]) ? $aMatches[1] : $aMatches[0];
+				} else {
+					if (isset($aMatches[$sReadKey])) $sReturn = $aMatches[$sReadKey];
+				}
+			}
 			
-			return $sHash;
+			return $sReturn;
 			
 		}
 		
@@ -74,18 +80,13 @@
 		
 		
 		
-		public static function sPregRead ($sRegExp, $sString, $sReadKey = '[auto]') {
+		public static function sConditionalHash ($sInput) {
 			
-			$sReturn = null;
+			$sHash = $sInput;
 			
-			preg_match($sRegExp, $sString, $aMatches);
-			if ($sReadKey == '[auto]') {
-				$sReturn = isset($aMatches[1]) = $aMatches[1] : $aMatches[0];
-			} else {
-				if (isset($aMatches[$sReadKey])) $sReturn = $aMatches[$sReadKey];
-			}
+			if (strlen($sHash) > 32) $sHash = md5($sHash);
 			
-			return $sReturn;
+			return $sHash;
 			
 		}
 		
@@ -94,7 +95,8 @@
 		
 		public static function sUrlToDomain ($sUrl) {
 			
-			return Utilitu::sPregRead('#^[a-z]+://([^\.]+\.)*(?<domain>[^\.]+\.[^\.]+)($|/)#', $sUrl, 'domain');
+			$sDomainRegExp = '#^[a-z]+://([^/\\.]+\\.)*(?<domain>[^/\\.]+\\.[^/\\.]+)($|/)#';
+			return Utilitu::sPregRead($sDomainRegExp, $sUrl, 'domain');
 			
 		}
 		

@@ -130,14 +130,18 @@
 				origin: [nIconSize/4,nIconSize],
 			};
 			
+			var nJitter = function (nL) {
+				return (0.00002 * (Math.random() - 0.5)) + parseFloat(nL);
+			}
+			
 			oD.vOnFilterChange(function(){
 				oD.oState.aFilteredAds.forEach(function(oAd){
 					oAd.oMarker = {
 						title: '',
 						icon: oMarkerIcon,
 						position: {
-							nLat: oAd.oData.oAddress.oCoords.iY,
-							nLon: oAd.oData.oAddress.oCoords.iX,
+							nLat: nJitter(oAd.oData.oAddress.oCoords.nY),
+							nLon: nJitter(oAd.oData.oAddress.oCoords.nX),
 						}
 					};
 					vAddMarker(oD.oMap.oMap, oAd.oMarker);

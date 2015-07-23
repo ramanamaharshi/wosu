@@ -34,8 +34,8 @@
 			}
 			
 			$oCoords = new StdClass();
-			$oCoords->iX = $oAddress->x;
-			$oCoords->iY = $oAddress->y;
+			$oCoords->nX = $oAddress->x;
+			$oCoords->nY = $oAddress->y;
 			
 			return $oCoords;
 			
@@ -61,7 +61,7 @@
 					fetched DATETIME,
 					x varchar(32),
 					y varchar(32),
-					response text,
+					response mediumtext,
 					PRIMARY KEY (`address_hash`)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 			");

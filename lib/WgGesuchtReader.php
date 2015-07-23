@@ -25,8 +25,7 @@
 				'wg2' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.2.0.0.html',
 			);
 			foreach ($aListUrls as $sListID => $sListUrl) {
-				sleep(2);
-				$sListHtml = Curl::sGet($sListUrl);
+				$sListHtml = Curl::sGet($sListUrl, 1.5);
 				$aDetailUrlsByList[$sListID] = self::aReadList($sListHtml);
 			}
 			
@@ -36,11 +35,8 @@
 					
 					$sTime = date('Y-m-d H:i:s');
 					
-					sleep(4);
-					$sDetailHtml = Curl::sGet($sDetailUrl);
-					sleep(2);
-					$sDetailHtml = Curl::sGet($sDetailUrl);
-					sleep(1);
+					$sDetailHtml = Curl::sGet($sDetailUrl, 1.5);
+					$sDetailHtml = Curl::sGet($sDetailUrl, 1.5);
 					
 					$iHtmlID = Ad::iInsertHtml($sListID, $sDetailUrl, $sDetailHtml, $sTime);
 					$oAd = self::oParseAdHtml($iHtmlID);
@@ -81,15 +77,20 @@
 		public static function oParseAdHtml ($iHtmlID) {
 			
 			$oHtml = Ad::oGetHtml($iHtmlID);
-			
-			$oAd = Ad::oGetByUrl($oHtml->url);
+			$oAd = Ad::oGetByUrl($oHtml->url_hash);
 			if (!$oAd) $oAd = new Ad();
+			
+			$oAd->oPage->iHtmlID = $oHtml->id;
+			$oAd->oPage->sListID = $oHtml->list;
+			$oAd->oPage->sFetched = $oHtml->fetched;
+			$oAd->oPage->sDomain = $oHtml->domain_hash;
+			$oAd->oPage->sUrl = $oHtml->url_hash;
 			
 			$oDom = HtmlDomParser::str_get_html($oHtml->html);
 			$oMainInfo = $oDom->find('.panel-body > .row', 0);
 			
 			$sOrange = $oDom->find('.headline-key-facts', 0)->innertext;
-			$sSquareMeters = Utilitu::sPregRead($sOrange, '#röße: ([,\d]+)m#');
+			$sSquareMeters = Utilitu::sPregRead('#röße: ([,\d]+)m#', $sOrange);
 			$oAd->oPhysical->nSquareMeters = floatval($sSquareMeters);
 			
 			$aKostenRows = $oMainInfo->find('.col-sm-5 tbody tr');
@@ -123,10 +124,10 @@
 			$sAddressHtml = $oMainInfo->find('.col-sm-4 > p', 0)->innertext;
 			$sAddress = trim($sAddressHtml);
 			$sAddress = str_replace("\n", '', $sAddress);
-			$sAddress = preg_replace('#<br />\s+#', "\n", $sAddress);
+			$sAddress = preg_replace('#<br ?/?>\s+#', "\n", $sAddress);
 			$aAddress = explode("\n", $sAddress);
 			$oAd->oAddress->sCity = 'Aachen';
-			$oAd->oAddress->sZip = Utilitu::sPregRead($aAddress[0], '#\s*(\d+)#');
+			$oAd->oAddress->sZip = Utilitu::sPregRead('#\s*(\d+)#', $aAddress[0]);
 			$oAd->oAddress->sStreet = $aAddress[1];
 			
 			$oCoords = Maps::oGetCoords($oAd->oAddress->sZip . ' ' . $oAd->oAddress->sStreet);
@@ -136,7 +137,7 @@
 			foreach ($aImageDoms as $oImageDom) {
 				$oImage = new StdClass();
 				$oImage->sUrl = str_replace('/./', '/', $oImageDom->attr['data-original']);
-				$sFileType = Utilitu::sPregRead($oImage->sUrl, '#\.([^\.]+)$#');
+				$sFileType = Utilitu::sPregRead('#\.([^\.]+)$#', $oImage->sUrl);
 				$oImage->sFile = self::$sImagesFolder . md5($oImage->sUrl) . '.' . $sFileType;
 				if (!file_exists($oImage->sFile)) {
 					file_put_contents($oImage->sFile, Curl::sGet($oImage->sUrl));
@@ -164,15 +165,9 @@
 			
 			/// TODO: oContact
 			
-			$oAd->oPage->sDomain = $oHtml->domain;
-			$oAd->oPage->sUrl = $oHtml->url;
-			$oAd->oPage->sFetched = $oHtml->fetched;
-			$oAd->oPage->iHtmlID = $oHtml->id;
-			$oAd->oPage->sListID = $oHtml->list;
-			
 			$oAd->vSave();
 			
-			DirectDB::bUpdate('ads_html', $oHtml->id, array('parsed' => true));
+			DirectDB::bUpdate('ads_html', array('parsed' => true), $oHtml->id);
 			
 			return $oAd;
 			

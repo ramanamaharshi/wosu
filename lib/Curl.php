@@ -25,7 +25,7 @@
 		
 		
 		
-		public function sGet ($sUrl, $sCookieJarFile = '[auto]') {
+		public function sGet ($sUrl, $nSleepSeconds = null, $sCookieJarFile = '[auto]') {
 			
 			$oInstance = isset($this) ? $this : self::$oDefault;
 			
@@ -53,6 +53,8 @@
 			
 			curl_close($oCurl);
 			
+			if ($nSleepSeconds) usleep($nSleepSeconds * 1000000);
+			
 			return $sResponse;
 			
 		}
@@ -60,19 +62,19 @@
 		
 		
 		
-		public function sCreateCookieJarFile ($bUse = true) {
-			
-			$oInstance = isset($this) ? $this : self::$oDefault;
-			
-			$sFile = self::$sCookieJarFolder . '/' . self::sMicrotime() . '_' . self::sRandomString(8) . '.cookie';
-			
-			file_put_contents($sFile, '');
-			
-			if ($bUse) $oInstance->vSetCookieJarFile($sFile);
-			
-			return $sFile;
-			
-		}
+		//public function sCreateCookieJarFile ($bUse = true) {
+		//	
+		//	$oInstance = isset($this) ? $this : self::$oDefault;
+		//	
+		//	$sFile = self::$sCookieJarFolder . '/' . Utilitu::sMicrotime() . '_' . Utilitu::sRandomString(8) . '.cookie';
+		//	
+		//	file_put_contents($sFile, '');
+		//	
+		//	if ($bUse) $oInstance->vSetCookieJarFile($sFile);
+		//	
+		//	return $sFile;
+		//	
+		//}
 		
 		
 		

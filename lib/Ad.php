@@ -10,7 +10,18 @@
 		
 		public static function oGetByUrl ($sUrl) {
 			
-			return self::oGet(array('url_hash' => Utilitu::sConditionalHash($sUrl)), true);
+			$oReturn = null;
+			
+			$sUrlHash = Utilitu::sConditionalHash($sUrl);
+			
+			$aAds = DirectDB::aSelectQuery("
+				SELECT ads.id AS id , ads_html.url_hash AS url_hash FROM ads
+				JOIN ads_html ON ads_html.id = ads.html_id
+				" . DirectDB::sMakeWhere(array('url_hash' => $sUrlHash)) . "
+			");
+			if ($aAds) $oReturn = self::oGet($aAds[0]->id);
+			
+			return $oReturn;
 			
 		}
 		
@@ -83,13 +94,11 @@
 		public function vSave () {
 			
 			$aData = array(
-				'json_data' => json_encode($this->oData),
 				'html_id' => $this->oPage->iHtmlID,
-				'domain_hash' => Utilitu::sConditionalHash($this->oPage->sDomain),
-				'url_hash' => Utilitu::sConditionalHash($this->oPage->sUrl),
 				'created' => $this->oPage->sCreated,
 				'changed' => $this->oPage->sChanged,
 				'fetched' => $this->oPage->sFetched,
+				'json_data' => json_encode($this->oData),
 			);
 			
 			if ($this->iID) {
@@ -116,6 +125,7 @@
 				'html_hash' => md5($sContent),
 				'html' => $sContent,
 				'fetched' => $sFetched,
+				'parsed' => 0,
 			);
 			
 			$iHtmlID = DirectDB::iInsert('ads_html', $aInsert);
@@ -129,7 +139,7 @@
 		
 		public static function oGetHtml ($iHtmlID) {
 			
-			return DirectDB::oSelectOne('ads_html', $iHtmlID));
+			return DirectDB::oSelectOne('ads_html', intval($iHtmlID));
 			
 		}
 		
@@ -157,7 +167,8 @@
 					domain_hash varchar(32),
 					url_hash varchar(32),
 					html_hash varchar(32),
-					html text,
+					html longtext,
+					INDEX (url_hash),
 					PRIMARY KEY (id)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 			");
@@ -166,13 +177,10 @@
 				CREATE TABLE IF NOT EXISTS ads (
 					id int(9) NOT NULL AUTO_INCREMENT,
 					html_id int(9),
-					domain_hash varchar(32),
-					url_hash varchar(32),
 					created datetime,
 					changed datetime,
 					fetched datetime,
-					json_data text,
-					INDEX (url_hash),
+					json_data longtext,
 					PRIMARY KEY (id)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 			");
@@ -213,8 +221,8 @@ public $oData = array(
 				'sZip' => null,
 				'sStreet' => null,
 				'oCoords' => array(
-					'iX' => null,
-					'iY' => null,
+					'nX' => null,
+					'nY' => null,
 				),
 			),
 			'oPrice' => array(

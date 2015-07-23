@@ -11,10 +11,10 @@
 			}
 			if (typeof mPosition == 'object') {
 				if (typeof mPosition[0] != 'undefined') {
-					mPosition = {iX: parseFloat(mPosition[1]) , iY: parseFloat(mPosition[0])};
+					mPosition = {nX: parseFloat(mPosition[1]) , nY: parseFloat(mPosition[0])};
 				}
-				if (typeof mPosition.iX != 'undefined') {
-					mPosition = {nLat: mPosition.iY , nLon: mPosition.iX};
+				if (typeof mPosition.nX != 'undefined') {
+					mPosition = {nLat: mPosition.nY , nLon: mPosition.nX};
 				}
 			}
 			mPosition = new google.maps.LatLng(mPosition.nLat , mPosition.nLon);
