@@ -10,9 +10,9 @@
 .dashboard .filter {
 	position: absolute;
 	left: 0%;
-	top: 0%;
-	width: 100%;
-	height: 20%;
+	top: 50%;
+	width: 25%;
+	height: 50%;
 	border: 1px dotted cyan;
 }
 
@@ -20,7 +20,7 @@
 	overflow-y: scroll;
 	position: absolute;
 	left: 75%;
-	top: 20%;
+	top: 50%;
 	width: 25%;
 	height: 50%;
 	border: 1px dotted cyan;
@@ -28,9 +28,9 @@
 
 .dashboard .map {
 	position: absolute;
-	left: 0%;
-	top: 20%;
-	width: 75%;
+	left: 25%;
+	top: 50%;
+	width: 50%;
 	height: 50%;
 	border: 1px dotted cyan;
 }
@@ -38,9 +38,9 @@
 .dashboard .detail {
 	position: absolute;
 	left: 0%;
-	top: 70%;
+	top: 0%;
 	width: 100%;
-	height: 30%;
+	height: 50%;
 	border: 1px dotted cyan;
 }
 
@@ -56,4 +56,8 @@
 
 .dashboard .list__item:hover {
 	background-color: #ccc;
+}
+
+.dashboard .list__item.active {
+	background-color: #8CF;
 }

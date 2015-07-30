@@ -84,7 +84,8 @@
 			$oAd->oPage->sListID = $oHtml->list;
 			$oAd->oPage->sFetched = $oHtml->fetched;
 			$oAd->oPage->sDomain = $oHtml->domain_hash;
-			$oAd->oPage->sUrl = $oHtml->url_hash;
+			$oAd->oPage->sUrl = $oHtml->url;
+if ($oAd->oPage->sUrl) ODT::vDump($oAd->oPage->sUrl);
 			
 			$oDom = HtmlDomParser::str_get_html($oHtml->html);
 			$oMainInfo = $oDom->find('.panel-body > .row', 0);

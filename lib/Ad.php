@@ -126,6 +126,7 @@
 				'html' => $sContent,
 				'fetched' => $sFetched,
 				'parsed' => 0,
+				'url' => $sUrl,
 			);
 			
 			$iHtmlID = DirectDB::iInsert('ads_html', $aInsert);
@@ -168,6 +169,7 @@
 					url_hash varchar(32),
 					html_hash varchar(32),
 					html longtext,
+					url text,
 					INDEX (url_hash),
 					PRIMARY KEY (id)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
@@ -203,8 +205,7 @@
 		
 		private $iID = null;
 		
-		#private $aData = array(
-public $oData = array(
+		public $oData = array(
 			'oPage' => array(
 				'sDomain' => null,
 				'sUrl' => null,

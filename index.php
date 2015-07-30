@@ -19,14 +19,23 @@
 		WgGesuchtReader::vRead();
 	}
 	
+	if (isset($_REQUEST['parse'])) {
+		$iParse = intval($_REQUEST['parse']);
+		if ($iParse) {
+			WgGesuchtReader::oParseAdHtml($iParse);
+		} else {
+			$aHtmlIDs = DirectDB::aSelect('ads_html', array(), 'id');
+			foreach ($aHtmlIDs as $oHtmlID) {
+				WgGesuchtReader::oParseAdHtml($oHtmlID->id);
+			}
+		}
+		
+	}
+	
 	if (isset($_REQUEST['show'])) {
 		$oHtml = Ad::oGetHtml($_REQUEST['show']);
 		$sHtml = $oHtml->html;
 		echo($sHtml);
-	}
-	
-	if (isset($_REQUEST['parse'])) {
-		ODT::vDump(WgGesuchtReader::oParseAdHtml(intval($_REQUEST['parse'])));
 	}
 	
 ?>

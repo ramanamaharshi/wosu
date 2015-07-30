@@ -101,11 +101,11 @@
 			}
 		}
 		
-		oMarker.oMarker = new google.maps.Marker(oMarker);
+		oMarker.gMarker = new google.maps.Marker(oMarker);
 		
-		oMarker.oMarker.oBindings = {};
-		oMarker.oMarker.vBind = function (sEvent, fCallback) {
-			var gMarker = oMarker.oMarker;
+		oMarker.gMarker.oBindings = {};
+		oMarker.gMarker.vBind = function (sEvent, fCallback) {
+			var gMarker = oMarker.gMarker;
 			if (typeof gMarker.oBindings[sEvent] == 'undefined') {
 				gMarker.oBindings[sEvent] = [];
 				google.maps.event.addListener(gMarker, sEvent, function(){
@@ -119,6 +119,15 @@
 		};
 		
 	}
+	
+	
+	
+	
+	window.vSetMarkerIcon = function (gMarker, oIcon) {
+		
+		
+		
+	};
 	
 	
 	
