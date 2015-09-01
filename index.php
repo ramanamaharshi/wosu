@@ -9,24 +9,35 @@
 	
 	if (isset($_REQUEST['ad_html'])) {
 		$oAds = DirectDB::oSelectOne('ads', array('id' => intval($_REQUEST['ad_html'])));
-		$oHtml = DirectDB::oSelectOne('ads_html', array('id' => intval($oAds->html_id)));
+		$oHtml = DirectDB::oSelectOne('ads_htmls', array('id' => intval($oAds->html_id)));
 		$sHtml = $oHtml->html;
-		ODT::vDump(WgGesuchtReader::oParseAdHtml(null, $sHtml));
+		ODT::vDump(WgGesuchtReader::oParseHtml(null, $sHtml));
 		exit($sHtml);
 	}
 	
 	if (isset($_REQUEST['fetch'])) {
-		WgGesuchtReader::vRead();
+		WgGesuchtReader::vFetch();
+	}
+	
+	if (isset($_REQUEST['search_html'])) {
+		if (isset($_REQUEST['url'])) {
+			$aWhere = array('url' => array('%like%' => $_REQUEST['url']));
+			$oHtml = DirectDB::oSelectOne('ads_htmls', $aWhere, 'id , url', 'ORDER BY fetched DESC LIMIT 1');
+			ODT::vDump($oHtml);
+		}
 	}
 	
 	if (isset($_REQUEST['parse'])) {
 		$iParse = intval($_REQUEST['parse']);
 		if ($iParse) {
-			WgGesuchtReader::oParseAdHtml($iParse);
+			$oAd = WgGesuchtReader::oParseHtml($iParse);
+			ODT::vDump($oAd);
+			$oHtml = Ad::oGetHtml($iParse);
+			ODT::vDump($oHtml);
 		} else {
-			$aHtmlIDs = DirectDB::aSelect('ads_html', array(), 'id');
+			$aHtmlIDs = DirectDB::aSelect('ads_htmls', array(), 'id');
 			foreach ($aHtmlIDs as $oHtmlID) {
-				WgGesuchtReader::oParseAdHtml($oHtmlID->id);
+				WgGesuchtReader::oParseHtml($oHtmlID->id);
 			}
 		}
 		

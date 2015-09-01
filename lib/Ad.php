@@ -15,8 +15,8 @@
 			$sUrlHash = Utilitu::sConditionalHash($sUrl);
 			
 			$aAds = DirectDB::aSelectQuery("
-				SELECT ads.id AS id , ads_html.url_hash AS url_hash FROM ads
-				JOIN ads_html ON ads_html.id = ads.html_id
+				SELECT ads.id AS id , ads_htmls.url_hash AS url_hash FROM ads
+				JOIN ads_htmls ON ads_htmls.id = ads.html_id
 				" . DirectDB::sMakeWhere(array('url_hash' => $sUrlHash)) . "
 			");
 			if ($aAds) $oReturn = self::oGet($aAds[0]->id);
@@ -97,7 +97,6 @@
 				'html_id' => $this->oPage->iHtmlID,
 				'created' => $this->oPage->sCreated,
 				'changed' => $this->oPage->sChanged,
-				'fetched' => $this->oPage->sFetched,
 				'json_data' => json_encode($this->oData),
 			);
 			
@@ -129,7 +128,7 @@
 				'url' => $sUrl,
 			);
 			
-			$iHtmlID = DirectDB::iInsert('ads_html', $aInsert);
+			$iHtmlID = DirectDB::iInsert('ads_htmls', $aInsert);
 			
 			return $iHtmlID;
 			
@@ -140,7 +139,34 @@
 		
 		public static function oGetHtml ($iHtmlID) {
 			
-			return DirectDB::oSelectOne('ads_html', intval($iHtmlID));
+			return DirectDB::oSelectOne('ads_htmls', intval($iHtmlID));
+			
+		}
+		
+		
+		
+		
+		public static function aGetLatestHtmlIDs ($sTimespan = '1 day') {
+			
+			$aIDs = array();
+			
+			$sStart = date('Y-m-d H:i:s', strtotime('now - ' . $sTimespan));
+			
+			$aRows = DirectDB::mQuery("
+				SELECT a.id , a.fetched FROM ads_htmls AS a
+					LEFT JOIN ads_htmls As b
+						ON a.id != b.id
+							AND a.url_hash = b.url_hash
+							AND a.fetched < b.fetched
+					WHERE a.fetched > '" . $sStart . "'
+						AND b.id IS NULL;
+			");
+			
+			foreach ($aRows as $oRow) {
+				$aIDs []= $oRow->id;
+			}
+			
+			return $aIDs;
 			
 		}
 		
@@ -149,8 +175,8 @@
 		
 		public static function vWipeDatabase () {
 			if (isset($_REQUEST['restructure'])) {
-				DirectDB::aQuery("DROP TABLE ads;");
-				DirectDB::aQuery("DROP TABLE ads_html;");
+				DirectDB::mQuery("DROP TABLE ads;");
+				DirectDB::mQuery("DROP TABLE ads_htmls;");
 			}
 		}
 		
@@ -159,8 +185,8 @@
 		
 		public static function vInit () {
 			
-			DirectDB::aQuery("
-				CREATE TABLE IF NOT EXISTS ads_html (
+			DirectDB::mQuery("
+				CREATE TABLE IF NOT EXISTS ads_htmls (
 					id int(9) NOT NULL AUTO_INCREMENT,
 					fetched datetime,
 					parsed tinyint(1),
@@ -175,13 +201,12 @@
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 			");
 			
-			DirectDB::aQuery("
+			DirectDB::mQuery("
 				CREATE TABLE IF NOT EXISTS ads (
 					id int(9) NOT NULL AUTO_INCREMENT,
 					html_id int(9),
 					created datetime,
 					changed datetime,
-					fetched datetime,
 					json_data longtext,
 					PRIMARY KEY (id)
 				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
@@ -203,7 +228,7 @@
 		
 		
 		
-		private $iID = null;
+		public $iID = null;
 		
 		public $oData = array(
 			'oPage' => array(

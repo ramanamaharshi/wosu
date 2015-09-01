@@ -51,6 +51,8 @@
 			
 			$sResponse = curl_exec($oCurl);
 			
+			$oInstance->iLastStatus = curl_getinfo($oCurl, CURLINFO_HTTP_CODE);
+			
 			curl_close($oCurl);
 			
 			if ($nSleepSeconds) usleep($nSleepSeconds * 1000000);
@@ -62,19 +64,34 @@
 		
 		
 		
-		//public function sCreateCookieJarFile ($bUse = true) {
-		//	
-		//	$oInstance = isset($this) ? $this : self::$oDefault;
-		//	
-		//	$sFile = self::$sCookieJarFolder . '/' . Utilitu::sMicrotime() . '_' . Utilitu::sRandomString(8) . '.cookie';
-		//	
-		//	file_put_contents($sFile, '');
-		//	
-		//	if ($bUse) $oInstance->vSetCookieJarFile($sFile);
-		//	
-		//	return $sFile;
-		//	
-		//}
+		public function iGetLastStatus () {
+			
+			$oInstance = isset($this) ? $this : self::$oDefault;
+			
+			return $oInstance->iLastStatus;
+			
+		}
+		
+		
+		
+		
+		public function sCreateCookieJarFile ($bUse = true) {
+			
+			$oInstance = isset($this) ? $this : self::$oDefault;
+			
+			if (!file_exists(self::$sCookieJarFolder)) {
+				mkdir(self::$sCookieJarFolder, 0777, true);
+			}
+			
+			$sFile = self::$sCookieJarFolder . '/' . Utilitu::sMicrotime() . '_' . Utilitu::sRandomString(8) . '.cookie';
+			
+			file_put_contents($sFile, '');
+			
+			if ($bUse) $oInstance->vSetCookieJarFile($sFile);
+			
+			return $sFile;
+			
+		}
 		
 		
 		

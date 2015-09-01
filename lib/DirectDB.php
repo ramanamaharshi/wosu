@@ -8,16 +8,17 @@
 		
 		
 		
-		private $oMysqli = null;
+		/// version 1.2
 		
-		private $aDoNotEscape = array('NOW()');
 		
+		
+		
+		public $bLog = false;
+		public $sLogFile = '';
 		public $aTableMap = array();
 		
-		public $sEscapeTable = '';
-		
-		public $bDump = false;
-		public $sLogFile = '';
+		private $aDoNotEscape = array('NOW()');
+		private $sDatabaseType = '';
 		
 		public static $oDefault = null;
 		
@@ -33,13 +34,92 @@
 		
 		
 		
-		public function __construct ($aAccessData) {
+		public function __construct ($aAccessData = null) {
 			
-			if (!isset($aAccessData['sHost'])) {
-				$aAccessData['sHost'] = 'localhost';
+			$oInstance = $this;
+			
+			if ($aAccessData) {
+				$oInstance->sDatabaseType = 'mysqli';
+				if (!isset($aAccessData['sHost'])) $aAccessData['sHost'] = 'localhost';
+				$oInstance->oDB = mysqli_connect(
+					$aAccessData['sHost'],
+					$aAccessData['sUser'],
+					$aAccessData['sPass'],
+					$aAccessData['sDaba']
+				);
+				if (mysqli_connect_errno($oInstance->oDB)) {
+					exit('failed to connect to ' . $sDaba . ' on ' . $sHost);
+				}
+			} else {
+				if ($aAccessData == 'wordpress') {
+					$oInstance->sDatabaseType = 'wordpress';
+					global $wpdb;
+					$oInstance->oDB = $wpdb;
+				}
 			}
 			
-			$this->oMysqli = mysqli_connect($aAccessData['sHost'], $aAccessData['sUser'], $aAccessData['sPass'], $aAccessData['sDaba']);
+		}
+		
+		
+		
+		
+		public function __destruct () {
+			
+			$oInstance = $this;
+			
+			if ($oInstance->sDatabaseType == 'mysqli') {
+				mysqli_close($oInstance->oDB);
+			}
+			
+		}
+		
+		
+		
+		
+		public function bCreateTable ($sTable, $sPrimary, $aColums) {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			$sCI = "\t\t\t";
+			
+			foreach ($aColums as $sName => $sAttrs) {
+				if (is_array($sAttrs)) {
+					$sLine = implode(' ', array(
+						$aAttrs['sField'],
+						$aAttrs['sType'],
+						$aAttrs['bNull'] ? 'NULL' : 'NOT NULL',
+						($aAttrs['sDefault'] === '') ? '' : 'DEFAULT ' . $aAttrs['sDefault'],
+						$aAttrs['sExtra'],
+					));
+					$aColumnQueries []= $sCI . $sAttrs;
+				} else {
+					$sLine = $sName . ' ' . $sAttrs;
+					$aColumnQueries []= $sCI . $sLine;
+				}
+			}
+			
+			$sQuery = '
+				CREATE TABLE ' . $sTable . ' (
+					' . $sPrimary . ' INT NOT AUTO INCREMENT,
+					' . implode("\n", $aColumnsQueries) . ',
+					PRIMARY KEY (' . $sPrimary . ')
+				);
+			';
+			
+			$bSuccess = $oInstance->mQuery($sQuery);
+			
+			return $bSuccess;
+			
+		}
+		
+		
+		
+		
+		public function aGetTableColumns ($sTable) {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			$aColumnData = $oInstance->aSelectQuery("SHOW COLUMNS FROM " . $sTable);
 			
 		}
 		
@@ -54,10 +134,7 @@
 			
 			$aTables = array();
 			foreach ($aTablesResult as $oTable) {
-				foreach ($oTable as $sKey => $sValue) {
-					$sTable = $sValue;
-					break;
-				}
+				$sTable = $oTable->{'Tables_in_' . $oInstance->sDaba};
 				$aTables []= $sTable;
 			}
 			
@@ -68,11 +145,11 @@
 		
 		
 		
-		public function oSelectOne ($sTableName, $mWhere = array(), $sSelectFields = '*') {
+		public function oSelectOne ($sTableName, $mWhere = array(), $sSelectFields = '*', $sSpecial = '') {
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
-			$aRows = $oInstance->aSelect($sTableName, $mWhere, $sSelectFields);
+			$aRows = $oInstance->aSelect($sTableName, $mWhere, $sSelectFields, $sSpecial);
 			if (count($aRows) == 0) {
 				return null;
 			} else {
@@ -84,8 +161,7 @@
 		
 		
 		
-		
-		public function aSelect ($sTableName, $mWhere = array(), $sSelectFields = '*') {
+		public function aSelect ($sTableName, $mWhere = array(), $sSelectFields = '*', $sSpecial = '') {
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
@@ -96,10 +172,13 @@
 			$sQuery = "
 				SELECT " . $sSelectFields . " FROM " . $sTableName . "
 				" . $sWhere . "
+				" . $sSpecial . "
 			";
-			$oInstance->info($sQuery);
+			
+			$oInstance->vLog($sQuery);
 			$aResult = $oInstance->aSelectQuery($sQuery);
-			$oInstance->info($aResult);
+			$oInstance->vLog($aResult);
+			
 			return $aResult;
 			
 		}
@@ -111,13 +190,13 @@
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
-			$oResult = $oInstance->aQuery($sQuery);
-			if ($oResult === false) {
-				$oInstance->vAutoError();
-			}
+			$oResult = $oInstance->mQuery($sQuery);
+			
+			if ($oResult === false) $oInstance->vAutoError();
+			
 			$aReturn = array();
 			while ($aRawRow = mysqli_fetch_array($oResult)) {
-				$oRow = new \stdClass();
+				$oRow = new stdClass();
 				foreach ($aRawRow as $sKey => $sValue) {
 					if (is_string($sKey)) {
 						$oRow->$sKey = $sValue;
@@ -125,10 +204,10 @@
 				}
 				$aReturn []= $oRow;
 			}
+			
 			return $aReturn;
 			
 		}
-		
 		
 		
 		
@@ -139,8 +218,8 @@
 			
 			$sTableName = $oInstance->sConvertTableName($sTableName);
 			
-			$sColumns = "";
 			$sValues = "";
+			$sColumns = "";
 			$bFirst = true;
 			foreach ($mData as $sKey => $sValue) {
 				if ($bFirst) {
@@ -166,19 +245,18 @@
 				VALUES " . $sValues . "
 			";
 			
-			$oInstance->info($sQuery);
-			$bSuccess = $oInstance->aQuery($sQuery);
-			$oInstance->info($bSuccess);
+			$oInstance->vLog($sQuery);
+			$bSuccess = $oInstance->mQuery($sQuery);
+			$oInstance->vLog($bSuccess);
+			
 			if ($bSuccess === false) {
 				$oInstance->vAutoError();
-			}
-			if ($bSuccess === false) {
 				return false;
 			}
-			return mysqli_insert_id($oInstance->getDB());
+			
+			return $oInstance->iGetInsertID();
 			
 		}
-		
 		
 		
 		
@@ -213,16 +291,15 @@
 				" . $sWhere . "
 			";
 			
-			$oInstance->info($sQuery);
-			$mReturn = $oInstance->aQuery($sQuery);
-			$oInstance->info($mReturn);
-			if ($mReturn === false) {
-				$oInstance->vAutoError();
-			}
+			$oInstance->vLog($sQuery);
+			$mReturn = $oInstance->mQuery($sQuery);
+			$oInstance->vLog($mReturn);
+			
+			if ($mReturn === false) $oInstance->vAutoError();
+			
 			return $mReturn;
 			
 		}
-		
 		
 		
 		
@@ -240,12 +317,12 @@
 				" . $sWhere . "
 			";
 			
-			$oInstance->info($sQuery);
-			$mReturn = $oInstance->aQuery($sQuery);
-			$oInstance->info($mReturn);
-			if ($mReturn === false) {
-				$oInstance->vAutoError();
-			}
+			$oInstance->vLog($sQuery);
+			$mReturn = $oInstance->mQuery($sQuery);
+			$oInstance->vLog($mReturn);
+			
+			if ($mReturn === false) $oInstance->vAutoError();
+			
 			return $mReturn;
 			
 		}
@@ -262,7 +339,6 @@
 					$sError = $oInstance->getDB()->sql_error();
 				}
 				\ODT::ec('ERROR: ' . $sError);
-				#\ODT::ec($sQuery);
 			}
 		}
 		
@@ -277,30 +353,33 @@
 				$mWhere = array('id' => $mWhere);
 			}
 			
+			$aWhere = array($mWhere);
 			if (is_array($mWhere)) {
-				$sWhere = "";
-				$bFirst = true;
+				$aWhere = array();
 				foreach ($mWhere as $sKey => $mValue) {
-					if ($bFirst) {
-						$bFirst = false;
-						$sWhere .= "WHERE ";
-					} else {
-						$sWhere .= " AND ";
-					}
 					if (is_array($mValue)) {
-						$aValues = array();
-						foreach ($mValue as $sValue) {
-							$aValues []= "'" . $oInstance->sEscape($sValue) . "'";
+						if (isset($mValue['%like%'])) {
+							$sValue = $mValue['%like%'];
+							$aWhere []= self::sProcessKey($sKey) . " LIKE '%" . $oInstance->sEscape($sValue) . "%'";
+						} else {
+							$aValues = array();
+							foreach ($mValue as $sValue) {
+								$aValues []= "'" . $oInstance->sEscape($sValue) . "'";
+							}
+							$aWhere []= self::sProcessKey($sKey) . " IN (" . implode(',', $aValues) . ")";
 						}
-						$sWhere .= self::sProcessKey($sKey) . " IN (" . implode(',', $aValues) . ")";
 					} else {
 						$sValue = $mValue;
-						$sWhere .= self::sProcessKey($sKey) . "='" . $oInstance->sEscape($sValue) . "'";
+						$aWhere []= self::sProcessKey($sKey) . "='" . $oInstance->sEscape($sValue) . "'";
 					}
 				}
-			} else {
-				$sWhere = "WHERE " . $mWhere;
 			}
+			
+			$sWhere = '';
+			if (count($aWhere)) {
+				$sWhere = "WHERE " . implode(" AND ", $aWhere);
+			}
+			
 			return $sWhere;
 			
 		}
@@ -309,8 +388,6 @@
 		
 		
 		private static function sProcessKey ($sKey) {
-			
-			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
 			if (strstr($sKey, '.' === false)) {
 				$sKey = "`" . $sKey . "`";
@@ -321,7 +398,112 @@
 				}
 				$sKey = implode('.', $aKeyParts);
 			}
+			
 			return $sKey;
+			
+		}
+		
+		
+		
+		
+		public function iGetInsertID () {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			$iReturn = null;
+			
+			switch ($oInstance->sDatabaseType) {
+				case 'mysqli':{
+					$sReturn = $oInstance->oGetDB()->insert_id;
+				}
+				case 'wordpress':{
+					$iReturn = intval($oInstance->oGetDB()->insert_id);
+				}
+			}
+			
+			return $iReturn;
+			
+		}
+		
+		
+		
+		
+		public function sGetLastError () {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			$sReturn = null;
+			
+			switch ($oInstance->sDatabaseType) {
+				case 'mysqli':{
+					$sReturn = $oInstance->oGetDB()->error;
+				}
+				case 'wordpress':{
+					$sReturn = $oInstance->oGetDB()->last_error;
+				}
+			}
+			
+			return $sReturn;
+			
+		}
+		
+		
+		
+		
+		public function sEscape ($sInput) {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			$sReturn = null;
+			
+			switch ($oInstance->sDatabaseType) {
+				case 'mysqli':{
+					if (get_class($oInstance->oGetDB()) == 'mysqli') {
+						$mValue = $oInstance->oGetDB()->real_escape_string($sInput);
+					} else {
+						$mValue = $oInstance->oGetDB()->quoteStr($sInput, $oInstance->sEscapeTable);
+					}
+				}
+				case 'wordpress':{
+					$sReturn = mysqli_real_escape_string($oInstance->oGetDB(), $sInput);
+				}
+			}
+			
+			return $sReturn;
+			
+		}
+		
+		
+		
+		
+		public function mQuery ($sQuery) {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			return $oInstance->oGetDB()->query($sQuery);
+			
+		}
+		
+		
+		
+		
+		public function oGetDB () {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			return $oInstance->oDB;
+			
+		}
+		
+		
+		
+		
+		public function vLog ($mInfo) {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			if ($oInstance->sLogFile) ODT::log($mInfo, $oInstance->sLogFile);
+			if ($oInstance->bLog) ODT::dump($mInfo);
 			
 		}
 		
@@ -342,66 +524,65 @@
 		
 		
 		
-		public function aQuery ($sQuery) {
+		public function vInitTables ($sTableGroupID, $sUpdateFunctionPattern) {
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
-			if (get_class($oInstance->getDB()) == 'mysqli') {
-				return $oInstance->getDB()->query($sQuery);
+			$sStoreTable = 'direct_db_store';
+			
+			$oInstance->mQuery('
+				CREATE TABLE IF NOT EXISTS ' . $sStoreTable . ' (
+				`id` int(10) unsigned NOT NULL auto_increment,
+				`key` varchar(64) NOT NULL,
+				`value` text NOT NULL,
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
+			');
+			
+			$sKey = 'table_group_version_' . $sTableGroupID;
+			
+			$oVersionRow = $oInstance->oSelectOne($sStoreTable, array('key' => $sKey));
+			if ($oVersionRow) {
+				$sCurrentVersion = $oVersionRow->value;
 			} else {
-				return $oInstance->getDB()->sql_query($sQuery);
+				$sCurrentVersion = '0';
+				$oInstance->iInsert($sStoreTable, array('key' => $sKey, 'version' => $sCurrentVersion));
 			}
 			
-		}
-		
-		
-		
-		
-		public function sEscape ($mValue) {
-			
-			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
-			
-			if (get_class($oInstance->getDB()) == 'mysqli') {
-				$mValue = $oInstance->getDB()->real_escape_string($mValue);
+			$aUpdateFunctionPattern = explode('::', sUpdateFunctionPattern);
+			if (isset($aUpdateFunctionPattern[1])) {
+				$sClass = $aUpdateFunctionPattern[0];
+				$sFunctionPart = $aUpdateFunctionPattern[1];
+				$aClassFunctions = get_class_methods($sClass);
+				$aFunctions = array();
+				foreach ($aClassFunctions as $sFunction) {
+					$aFunctions []= $sClass . '::' . $aClassFunctions;
+				}
 			} else {
-				$mValue = $oInstance->getDB()->quoteStr($mValue, $oInstance->sEscapeTable);
+				$sFunctionPart = $aUpdateFunctionPattern[0];
+				$aFunctions = get_defined_functions();
 			}
-			
-			return $mValue;
-			
-		}
-		
-		
-		
-		
-		public function info ($mInfo) {
-			
-			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
-			
-			if (class_exists('\ODT')) {
-				if ($oInstance->bDump) \ODT::dump($mInfo);
-				if ($oInstance->sLogFile) \ODT::log($mInfo, $oInstance->sLogFile);
+			$aUpdateFunctions = array();
+			foreach ($aFunctions as $sFunction) {
+				if (preg_match('/^' . $sUpdateFunctionPattern . '_(?<version>\d+(_\d+)*)$/', $sFunction, $aMatchesA)) {
+					$sVersion = str_replace('_', '.', $aMatchesA['version']);
+					$aUpdateFunctions[$sVersion] = $sFunction;
+				}
 			}
+			uksort($aUpdateFunctions, 'version_compare');
 			
-		}
-		
-		
-		
-		
-		public function getDB () {
-			
-			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
-			
-			return $oInstance->oMysqli;
-			
-		}
-		
-		
-		
-		
-		public function __destruct () {
-			
-			mysqli_close($this->oMysqli);
+			foreach ($aUpdateFunctions as $sVersion => $sFunction) {
+				if (version_compare($sCurrentVersion, $sVersion) < 0) {
+					$bSuccess = call_user_func_array($sFunction, array($oInstance));
+					if ($bSuccess) {
+						$sCurrentVersion = $sVersion;
+						$oInstance->bUpdate($sStoreTable, array('key' => $sKey, 'version' => $sCurrentVersion));
+						self::$aAdminNotices []= 'tp_likes: updated database to version ' . $sVersion;
+					} else {
+						self::$aAdminNotices []= 'tp_likes: failed to update database to version ' . $sVersion;
+						return;
+					}
+				}
+			}
 			
 		}
 		

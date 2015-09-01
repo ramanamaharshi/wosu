@@ -138,10 +138,14 @@
 			
 			var nIconSize = 12;
 			var oMarkerIcon = {
-				url: '/public/img/marker_icon_a.svg',
-				scale: [nIconSize,nIconSize],
-				bounds: [nIconSize/4,0,nIconSize/2,nIconSize],
-				origin: [nIconSize/4,nIconSize],
+				url: '/public/img/marker_icon_b.png',
+				scale: [5,5],
+				bounds: [0,0,5,5],
+				origin: [1,1],
+				//url: '/public/img/marker_icon_a.svg',
+				//scale: [nIconSize,nIconSize],
+				//bounds: [nIconSize/4,0,nIconSize/2,nIconSize],
+				//origin: [nIconSize/4,nIconSize],
 			};
 			
 			var nJitter = function (nL) {

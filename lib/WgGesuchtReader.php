@@ -14,7 +14,7 @@
 		
 		
 		
-		public static function vRead () {
+		public static function vFetch () {
 			
 			Curl::$oDefault->vSetCookieJarFile('store/cookie');
 			
@@ -31,7 +31,7 @@
 			
 			foreach ($aDetailUrlsByList as $sListID => $aDetailUrls) {
 				
-				foreach ($aDetailUrls as $sDetailUrl) {
+				foreach ($aDetailUrls as $iNr => $sDetailUrl) {
 					
 					$sTime = date('Y-m-d H:i:s');
 					
@@ -39,7 +39,7 @@
 					$sDetailHtml = Curl::sGet($sDetailUrl, 1.5);
 					
 					$iHtmlID = Ad::iInsertHtml($sListID, $sDetailUrl, $sDetailHtml, $sTime);
-					$oAd = self::oParseAdHtml($iHtmlID);
+					#$oAd = self::oParseAdHtml($iHtmlID);
 					
 				}
 				
@@ -74,7 +74,7 @@
 		
 		
 		
-		public static function oParseAdHtml ($iHtmlID) {
+		public static function oParseHtml ($iHtmlID) {
 			
 			$oHtml = Ad::oGetHtml($iHtmlID);
 			$oAd = Ad::oGetByUrl($oHtml->url_hash);
@@ -85,13 +85,12 @@
 			$oAd->oPage->sFetched = $oHtml->fetched;
 			$oAd->oPage->sDomain = $oHtml->domain_hash;
 			$oAd->oPage->sUrl = $oHtml->url;
-if ($oAd->oPage->sUrl) ODT::vDump($oAd->oPage->sUrl);
 			
 			$oDom = HtmlDomParser::str_get_html($oHtml->html);
 			$oMainInfo = $oDom->find('.panel-body > .row', 0);
 			
 			$sOrange = $oDom->find('.headline-key-facts', 0)->innertext;
-			$sSquareMeters = Utilitu::sPregRead('#röße: ([,\d]+)m#', $sOrange);
+			$sSquareMeters = Utilitu::sPregRead('#röße:\s+([,\d]+)m#', $sOrange);
 			$oAd->oPhysical->nSquareMeters = floatval($sSquareMeters);
 			
 			$aKostenRows = $oMainInfo->find('.col-sm-5 tbody tr');
@@ -129,21 +128,28 @@ if ($oAd->oPage->sUrl) ODT::vDump($oAd->oPage->sUrl);
 			$aAddress = explode("\n", $sAddress);
 			$oAd->oAddress->sCity = 'Aachen';
 			$oAd->oAddress->sZip = Utilitu::sPregRead('#\s*(\d+)#', $aAddress[0]);
-			$oAd->oAddress->sStreet = $aAddress[1];
+			$oAd->oAddress->sStreet = trim($aAddress[1]);
 			
-			$oCoords = Maps::oGetCoords($oAd->oAddress->sZip . ' ' . $oAd->oAddress->sStreet);
+			$sGeocodeAddress = $oAd->oAddress->sStreet . ', ' . $oAd->oAddress->sZip . ' ' . 'Aachen';
+			$oCoords = Maps::oGetCoords($sGeocodeAddress);
 			$oAd->oAddress->oCoords = $oCoords;
 			
-			$aImageDoms = $oDom->find('.Gallery img');
+			$aImageDoms = $oDom->find('img.sp-image');
 			foreach ($aImageDoms as $oImageDom) {
+				if (!isset($oImageDom->attr['data-large'])) continue;
 				$oImage = new StdClass();
-				$oImage->sUrl = str_replace('/./', '/', $oImageDom->attr['data-original']);
+				$oImage->sUrl = str_replace('/./', '/', $oImageDom->attr['data-large']);
 				$sFileType = Utilitu::sPregRead('#\.([^\.]+)$#', $oImage->sUrl);
 				$oImage->sFile = self::$sImagesFolder . md5($oImage->sUrl) . '.' . $sFileType;
 				if (!file_exists($oImage->sFile)) {
-					file_put_contents($oImage->sFile, Curl::sGet($oImage->sUrl));
+					$sImage = Curl::sGet($oImage->sUrl);
+					if (Curl::iGetLastStatus() == 200) {
+						file_put_contents($oImage->sFile, $sImage);
+					}
 				}
-				$oAd->oPage->aImages []= $oImage;
+				if (file_exists($oImage->sFile)) {
+					$oAd->oPage->aImages []= $oImage;
+				}
 			}
 			
 			$aDescription = array();
@@ -168,7 +174,7 @@ if ($oAd->oPage->sUrl) ODT::vDump($oAd->oPage->sUrl);
 			
 			$oAd->vSave();
 			
-			DirectDB::bUpdate('ads_html', array('parsed' => true), $oHtml->id);
+			DirectDB::bUpdate('ads_htmls', array('parsed' => true), $oHtml->id);
 			
 			return $oAd;
 			

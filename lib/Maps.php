@@ -15,6 +15,7 @@
 		
 		public static function oGetCoords ($sAddress) {
 			
+			$sAddress = trim($sAddress);
 			$sAddressHash = Utilitu::sConditionalHash($sAddress);
 			
 			$oAddress = DirectDB::oSelectOne(self::$sTable, array('address_hash' => $sAddressHash));
@@ -25,6 +26,7 @@
 				$oFRC = $oFirstResult->geometry->location;
 				DirectDB::iInsert(self::$sTable, array(
 					'address_hash' => $sAddressHash,
+					'address_stub' => substr($sAddress, 0, 64),
 					'fetched' => date('Y-m-d H:i:s'),
 					'x' => '' . $oFRC->lng . '',
 					'y' => '' . $oFRC->lat . '',
@@ -46,7 +48,7 @@
 		
 		public static function vWipeDatabase () {
 			
-			DirectDB::aQuery("DROP TABLE " . self::$sTable . ";");
+			DirectDB::mQuery("DROP TABLE " . self::$sTable . ";");
 			
 		}
 		
@@ -55,9 +57,10 @@
 		
 		public static function vInit () {
 			
-			DirectDB::aQuery("
+			DirectDB::mQuery("
 				CREATE TABLE IF NOT EXISTS `" . self::$sTable . "` (
 					address_hash varchar(32) NOT NULL,
+					address_stub varchar(64) NOT NULL,
 					fetched DATETIME,
 					x varchar(32),
 					y varchar(32),
