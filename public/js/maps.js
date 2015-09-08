@@ -118,6 +118,10 @@
 			gMarker.oBindings[sEvent].push(fCallback);
 		};
 		
+		oMarker.vShow = function (bShow) {
+			oMarker.gMarker.setVisible(bShow);
+		};
+		
 	}
 	
 	

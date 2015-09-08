@@ -35,9 +35,9 @@
 			$oHtml = Ad::oGetHtml($iParse);
 			ODT::vDump($oHtml);
 		} else {
-			$aHtmlIDs = DirectDB::aSelect('ads_htmls', array(), 'id');
-			foreach ($aHtmlIDs as $oHtmlID) {
-				WgGesuchtReader::oParseHtml($oHtmlID->id);
+			$aHtmlIDs = Ad::aGetLatestHtmlIDs('1 week');
+			foreach ($aHtmlIDs as $iID) {
+				WgGesuchtReader::oParseHtml($iID);
 			}
 		}
 		

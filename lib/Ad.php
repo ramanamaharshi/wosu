@@ -152,7 +152,7 @@
 			
 			$sStart = date('Y-m-d H:i:s', strtotime('now - ' . $sTimespan));
 			
-			$aRows = DirectDB::mQuery("
+			$aRows = DirectDB::aSelectQuery("
 				SELECT a.id , a.fetched FROM ads_htmls AS a
 					LEFT JOIN ads_htmls As b
 						ON a.id != b.id

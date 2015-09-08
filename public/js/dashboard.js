@@ -59,6 +59,13 @@
 			oD.oFilter.jFilter = oD.jMain.jAppend('filter');
 			oD.oFilter.jFilter.text('filter').attr('style', 'vertical-align:middle;text-align:center;');
 			
+			var jTestInput = $('<input>');
+			oD.oFilter.jFilter.append(jTestInput);
+			jTestInput.change(function(){
+				oD.oState.oFilter.iMaxPrice = 100 * parseFloat(jTestInput.val());
+				oD.vSetFilter(oD.oState.oFilter);
+			});
+			
 			oD.vOnLoadedAdsChange(function(){
 				oD.vSetFilter(oD.oState.oFilter);
 			});
@@ -153,20 +160,26 @@
 			}
 			
 			oD.vOnFilterChange(function(){
+				oD.oState.aLoadedAds.forEach(function(oAd){
+					if (typeof oAd.oMarker == 'undefined') {
+						oAd.oMarker = {
+							title: '',
+							icon: oMarkerIcon,
+							position: {
+								nLat: nJitter(oAd.oData.oAddress.oCoords.nY),
+								nLon: nJitter(oAd.oData.oAddress.oCoords.nX),
+							}
+						};
+						vAddMarker(oD.oMap.oMap, oAd.oMarker);
+						oAd.oMarker.gMarker.vBind('click', function(){
+							console.log('click', arguments);
+							oD.vSetAd(oAd);
+						});
+					}
+					oAd.oMarker.vShow(false);
+				});
 				oD.oState.aFilteredAds.forEach(function(oAd){
-					oAd.oMarker = {
-						title: '',
-						icon: oMarkerIcon,
-						position: {
-							nLat: nJitter(oAd.oData.oAddress.oCoords.nY),
-							nLon: nJitter(oAd.oData.oAddress.oCoords.nX),
-						}
-					};
-					vAddMarker(oD.oMap.oMap, oAd.oMarker);
-					oAd.oMarker.gMarker.vBind('click', function(){
-						console.log('click', arguments);
-						oD.vSetAd(oAd);
-					});
+					oAd.oMarker.vShow(true);
 				});
 			});
 			
@@ -221,10 +234,13 @@
 			
 			oD.oState.aFilteredAds = [];
 			oD.oState.aLoadedAds.forEach(function(oAd){
-				oD.oState.aFilteredAds.push(oAd);
+				if (!oFilter.iMaxPrice || oAd.oData.oPrice.iWarm < oFilter.iMaxPrice) {
+					oD.oState.aFilteredAds.push(oAd);
+				}
 			});
 			
 console.log('vSetFilter()');
+console.log(oD.oState.aFilteredAds.length);
 			oD.vOnFilterChange();
 			
 		},
