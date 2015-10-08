@@ -1,0 +1,54 @@
+
+.slider {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+.slider .slider__window {
+	overflow: hidden;
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+.slider .slider__container {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+}
+
+.slider .slider__item {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+}
+
+.slider .slider__item__image {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+.slider .slider__navigation {
+}
+
+.slider .slider__navigation__prev , .slider .slider__navigation__next {
+	position: absolute;
+	background-color: rgba(0,0,0,0.5);
+	width: 16%;
+	height: 33%;
+	top: 33%;
+	cursor: pointer;
+}
+
+.slider .slider__navigation__prev {
+	left: 0;
+}
+
+.slider .slider__navigation__next {
+	right: 0;
+}
+

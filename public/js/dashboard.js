@@ -199,13 +199,16 @@
 			oD.vOnAdChange(function(){
 				var oAdData = oD.oState.oCurrentAd.oData;
 				jDetail.empty();
+				var aImageSources = [];
+				oAdData.oPage.aImages.forEach(function(oImage){
+					//oD.oDetail.jDetail.append('<img src="/' + oImage.sFile + '">');
+					aImageSources.push('/' + oImage.sFile);
+				});
+				var jRight = 
+				var oSlider = new Slider(oD.oDetail.jDetail, aImageSources);
 				var jLink = jDetail.jAppend('detail_link', 'a');
 				jLink.attr('target', '_blank').attr('href', oAdData.oPage.sUrl);
 				jLink.text(oAdData.oAddress.sStreet);
-				oD.oDetail.jDetail.append();
-				oAdData.oPage.aImages.forEach(function(oImage){
-					oD.oDetail.jDetail.append('<img src="/' + oImage.sFile + '">');
-				});
 			});
 			
 		},

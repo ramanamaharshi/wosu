@@ -44,6 +44,15 @@
 	border: 1px dotted cyan;
 }
 
+.dashboard .detail .slider {
+	position: absolute;
+	left: 0%;
+	top: 0%;
+	width: 50%;
+	height: 100%;
+	border: 1px dotted cyan;
+}
+
 .dashboard .list__item {
 	position: relative;
 	padding: 5px 10px;
