@@ -15,9 +15,8 @@
 		exit($sHtml);
 	}
 	
-	if (isset($_REQUEST['fetch'])) {
-		WgGesuchtReader::vFetch();
-	}
+	$bFetch = (isset($_REQUEST['fetch']) || isset($_REQUEST['fetch_and_parse']));
+	$bParse = (isset($_REQUEST['parse']) || isset($_REQUEST['fetch_and_parse']));
 	
 	if (isset($_REQUEST['search_html'])) {
 		if (isset($_REQUEST['url'])) {
@@ -27,7 +26,12 @@
 		}
 	}
 	
-	if (isset($_REQUEST['parse'])) {
+	if ($bFetch) {
+		Ad::vDeleteDuplicateUrlAds();
+		WgGesuchtReader::vFetch();
+	}
+	
+	if ($bParse) {
 		$iParse = intval($_REQUEST['parse']);
 		if ($iParse) {
 			$oAd = WgGesuchtReader::oParseHtml($iParse);
@@ -35,12 +39,11 @@
 			$oHtml = Ad::oGetHtml($iParse);
 			ODT::vDump($oHtml);
 		} else {
-			$aHtmlIDs = Ad::aGetLatestHtmlIDs('1 week');
+			$aHtmlIDs = Ad::aGetLatestHtmlIDs('999 days');
 			foreach ($aHtmlIDs as $iID) {
 				WgGesuchtReader::oParseHtml($iID);
 			}
 		}
-		
 	}
 	
 	if (isset($_REQUEST['show'])) {

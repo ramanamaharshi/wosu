@@ -3,12 +3,17 @@
 	
 	
 	
-	window.Slider = function (jContainer, aImages) {
+	window.Slider = function (jContainer, aImages, oOptions) {
 		
 		var oSlider = this;
 		
+		if (typeof aImages == 'undefined') aImages = [];
+		if (typeof oOptions == 'undefined') oOptions = {};
+		if (typeof oOptions.iAnimationMillis == 'undefined') oOptions.iAnimationMillis = 333;
+		
 		oSlider.jSlider = jDiv('slider').appendTo(jContainer);
 		oSlider.aImages = aImages;
+		oSlider.oOptions = oOptions;
 		
 		for (var iI = 0; iI < oSlider.aImages.length; iI ++) {
 			var oImage = oSlider.aImages[iI];
@@ -93,7 +98,7 @@
 		var oSlider = this;
 		
 		oSlider.jContainer.css({left: (-100 * oSlider.iAt) + '%'});
-		oSlider.jContainer.animate({left: (-100 * iNew) + '%'});
+		oSlider.jContainer.animate({left: (-100 * iNew) + '%'}, oSlider.oOptions.iAnimationMillis);
 		
 		oSlider.iAt = iNew;
 		

@@ -25,7 +25,23 @@
 		
 		
 		
+		public function sGetTwice ($sUrl, $nSleepSeconds = null, $sCookieJarFile = '[auto]', $iTimes = 2) {
+			
+			$sReturn = null;
+			
+			for ($iT = 0; $iT < $iTimes; $iT ++) {
+				$sReturn = self::sGet($sUrl, $nSleepSeconds, $sCookieJarFile);
+			}
+			
+			return $sReturn;
+			
+		}
+		
+		
+		
+		
 		public function sGet ($sUrl, $nSleepSeconds = null, $sCookieJarFile = '[auto]') {
+ODT::vDump('sGet("' . $sUrl . '", ' . $nSleepSeconds . ')');
 			
 			$oInstance = isset($this) ? $this : self::$oDefault;
 			

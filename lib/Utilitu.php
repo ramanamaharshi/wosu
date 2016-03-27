@@ -13,6 +13,46 @@
 		
 		
 		
+		public static function nDateDiff ($sDateA, $sDateB = 'now', $sUnit = 'seconds') {
+			
+			$nReturn = strtotime($sDateB) - strtotime($sDateA);
+			
+			$aUnitMap = array(
+				'seconds' => 1,
+				'minutes' => 60,
+				'hours' => 60 * 60,
+				'days' => 24 * 60 * 60,
+				'years' => 365 * 24 * 60 * 60,
+			);
+			
+			if (isset($aUnitMap[$sUnit])) $nReturn /= $aUnitMap[$sUnit];
+			
+ODT::vDump(array('nDateDiff', $sDateA, $sDateB, $sUnit, $nReturn));
+			return $nReturn;
+			
+		}
+		
+		
+		
+		
+		public static function aExtractFieldFromArray ($aArray, $sField, $sSpecial = null) {
+			
+			$aReturn = array();
+			
+			foreach ($aArray as $sKey => $oElement) {
+				$aReturn[$sKey] = $oElement->{$sField};
+				if ($sSpecial == 'intval') {
+					$aReturn[$sKey] = intval($aReturn[$sKey]);
+				}
+			}
+			
+			return $aReturn;
+			
+		}
+		
+		
+		
+		
 		public static function aListFiles ($sDir, $sFileType = null, $bAbsolute = false) {
 			
 			$aFiles = array();

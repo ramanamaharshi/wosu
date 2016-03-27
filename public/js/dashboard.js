@@ -204,11 +204,35 @@
 					//oD.oDetail.jDetail.append('<img src="/' + oImage.sFile + '">');
 					aImageSources.push('/' + oImage.sFile);
 				});
-				var jRight = 
-				var oSlider = new Slider(oD.oDetail.jDetail, aImageSources);
-				var jLink = jDetail.jAppend('detail_link', 'a');
+				if (aImageSources.length) {
+					var oSlider = new Slider(oD.oDetail.jDetail, aImageSources, {iAnimationMillis: 0});
+				}
+				var jRight = jDetail.jDiv('detail__right');
+				var jLink = jRight.jDom('a', 'detail__link');
 				jLink.attr('target', '_blank').attr('href', oAdData.oPage.sUrl);
 				jLink.text(oAdData.oAddress.sStreet);
+				var jInfo = jRight.jDiv('detail__info');
+				var jInfoTable = jInfo.jDom('table', 'detail__info__table');
+				var sCold = oDashboard.sPrice(oAdData.oPrice.iCold);
+				var sWarm = oDashboard.sPrice(oAdData.oPrice.iWarm);
+				var aInfo = [
+					{sLabel: 'Liste', sContent: oAdData.oPage.sListID},
+					{sLabel: 'Größe', sContent: oAdData.oPhysical.nSquareMeters + 'm²'},
+					{sLabel: 'Preis', sContent: sWarm + ' (' + sCold + ')'},
+					{sLabel: '€/m²', sContent: oDashboard.sPrice(oAdData.oPrice.iWarm / oAdData.oPhysical.nSquareMeters, 'decimals')},
+					{sLabel: 'Kaution', sContent: oDashboard.sPrice(oAdData.oPrice.iBail)},
+					{sLabel: 'Abschlag', sContent: oDashboard.sPrice(oAdData.oPrice.iBuy)},
+					{sLabel: 'erstellt', sContent: oAdData.oPage.sCreated},
+					{sLabel: 'geändert', sContent: oAdData.oPage.sChanged},
+					{sLabel: 'geholt', sContent: oAdData.oPage.sFetched},
+				];
+				for (var iI = 0; iI < aInfo.length; iI ++) {
+					var oInfo = aInfo[iI];
+					var jRow = jInfoTable.jDom('tr');
+					jRow.jDom('td').text(oInfo.sLabel);
+					jRow.jDom('td').text(oInfo.sContent);
+				}
+console.log(oAdData);
 			});
 			
 		},
@@ -328,6 +352,74 @@ console.log(oD.oState.aFilteredAds.length);
 		
 		
 		
+		
+		sPrice: function (iPrice, sFormat) {
+			
+			if (typeof sFormat == 'undefined') sFormat = 'normal';
+			
+			var sPrice = '';
+			
+			if (sFormat == 'normal') {
+				sPrice = Math.round(0.01 * iPrice) + '€';
+			}
+			if (sFormat == 'decimals') {
+				sPrice = (0.01 * iPrice).toFixed(2) + '€';
+			}
+			
+			return sPrice;
+			
+		}
+		
+		
+		
+		
+	};
+	
+	
+	
+	
+	$.fn.jDiv = function (oAttributes) {
+		
+		return (jDiv(oAttributes)).appendTo($(this));
+		
+	};
+	
+	
+	
+	
+	$.fn.jDom = function (sTag, oAttributes) {
+		
+		return (jDom(sTag, oAttributes)).appendTo($(this));
+		
+	}
+	
+	
+	
+	
+	var jDiv = function (oAttributes) {
+		
+		return jDom('div', oAttributes);
+		
+	}
+	
+	
+	
+	
+	var jDom = function (sTag, oAttributes) {
+		
+		if (typeof oAttributes == 'undefined') oAttributes = {};
+		
+		if (typeof oAttributes == 'string') {
+			oAttributes = {class: oAttributes};
+		}
+		
+		var jDom = $('<' + sTag + '/>');
+		
+		for (var sAttr in oAttributes) {
+			jDom.attr(sAttr, oAttributes[sAttr]);
+		}
+		
+		return jDom;
 		
 	};
 	

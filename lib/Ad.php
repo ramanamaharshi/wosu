@@ -8,22 +8,22 @@
 		
 		
 		
-		public static function oGetByUrl ($sUrl) {
-			
-			$oReturn = null;
-			
-			$sUrlHash = Utilitu::sConditionalHash($sUrl);
-			
-			$aAds = DirectDB::aSelectQuery("
-				SELECT ads.id AS id , ads_htmls.url_hash AS url_hash FROM ads
-				JOIN ads_htmls ON ads_htmls.id = ads.html_id
-				" . DirectDB::sMakeWhere(array('url_hash' => $sUrlHash)) . "
-			");
-			if ($aAds) $oReturn = self::oGet($aAds[0]->id);
-			
-			return $oReturn;
-			
-		}
+		#public static function oGetByUrl ($sUrl) {
+		#	
+		#	$oReturn = null;
+		#	
+		#	$sUrlHash = Utilitu::sConditionalHash($sUrl);
+		#	
+		#	$aAds = DirectDB::aSelectQuery("
+		#		SELECT ads.id AS id , ads_htmls.url_hash AS url_hash FROM ads
+		#		JOIN ads_htmls ON ads_htmls.id = ads.html_id
+		#		" . DirectDB::sMakeWhere(array('url_hash' => $sUrlHash)) . "
+		#	");
+		#	if ($aAds) $oReturn = self::oGet($aAds[0]->id);
+		#	
+		#	return $oReturn;
+		#	
+		#}
 		
 		
 		
@@ -47,9 +47,11 @@
 		
 		
 		
-		public static function aGet ($mWhere = array()) {
+		public static function aGet ($sQuery = null) {
 			
-			$aResult = DirectDB::aSelect('ads', $mWhere);
+			if (!$sQuery) $sQuery = "SELECT * FROM ads;";
+			
+			$aResult = DirectDB::aSelectQuery($sQuery);
 			
 			$aAds = array();
 			foreach ($aResult as $oRow) {
@@ -57,6 +59,50 @@
 			}
 			
 			return $aAds;
+			
+		}
+		
+		
+		
+		
+		public static function vDeleteDuplicateUrlAds () {
+			
+			$aAllUrlRows = DirectDB::aSelect('ads_htmls', array(), 'url', 'GROUP BY url');
+			$aAllUrls = Utilitu::aExtractFieldFromArray($aAllUrlRows, 'url');
+			
+			foreach ($aAllUrls as $sUrl) {
+				$aUrlAdIDs = Ad::aGetAdIDsByUrl($sUrl);
+				$iPopped = array_pop($aUrlAdIDs);
+				DirectDB::bDelete('ads', array('id' => $aUrlAdIDs));
+			}
+			
+		}
+		
+		
+		
+		
+		public static function iRemoveAdsByUrl ($sUrl) {
+			
+			$aIDs = self::aGetAdIDsByUrl($sUrl);
+			
+			DirectDB::bDelete('ads', array('id' => $aIDs));
+			
+			return count($aIDs);
+			
+		}
+		
+		
+		
+		
+		public static function aGetAdIDsByUrl ($sUrl) {
+			
+			$aWhere = array('url_hash' => Utilitu::sConditionalHash($sUrl));
+			$aHtmls = DirectDB::aSelect('ads_htmls', $aWhere, 'id');
+			$aHtmlIDs = Utilitu::aExtractFieldFromArray($aHtmls, 'id', 'intval');
+			$aAdRows = DirectDB::aSelect('ads', array('html_id' => $aHtmlIDs));
+			$aAdIDs = Utilitu::aExtractFieldFromArray($aAdRows, 'id', 'intval');
+			
+			return $aAdIDs;
 			
 		}
 		
@@ -111,7 +157,7 @@
 		
 		
 		
-		public static function iInsertHtml ($sList, $sUrl, $sContent, $sFetched = null) {
+		public static function iSaveHtml ($sList, $sUrl, $sContent, $sFetched = null) {
 			
 			if (!$sFetched) $sFetched = date('Y-m-d H:i:s');
 			
@@ -140,6 +186,32 @@
 		public static function oGetHtml ($iHtmlID) {
 			
 			return DirectDB::oSelectOne('ads_htmls', intval($iHtmlID));
+			
+		}
+		
+		
+		
+		
+		public static function oGetLatestHtmlForUrl ($sUrl) {
+			
+			$sExtra = 'ORDER BY fetched DESC LIMIT 1';
+			$sWhere = array('url_hash' => Utilitu::sConditionalHash($sUrl));
+			$oReturn = DirectDB::oSelectOne('ads_htmls', $sWhere, '*', $sExtra);
+			
+			return $oReturn;
+			
+		}
+		
+		
+		
+		
+		public static function oGetEarliestHtmlForUrl ($sUrl) {
+			
+			$sExtra = 'ORDER BY fetched ASC LIMIT 1';
+			$sWhere = array('url_hash' => Utilitu::sConditionalHash($sUrl));
+			$oReturn = DirectDB::oSelectOne('ads_htmls', $sWhere, '*', $sExtra);
+			
+			return $oReturn;
 			
 		}
 		

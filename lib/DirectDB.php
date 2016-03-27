@@ -8,7 +8,7 @@
 		
 		
 		
-		/// version 1.2
+		/// version 1.3
 		
 		
 		
@@ -17,8 +17,9 @@
 		public $sLogFile = '';
 		public $aTableMap = array();
 		
-		private $aDoNotEscape = array('NOW()');
+		private $sLatestQuery = '';
 		private $sDatabaseType = '';
+		private $aDoNotEscape = array('NOW()');
 		
 		public static $oDefault = null;
 		
@@ -37,6 +38,8 @@
 		public function __construct ($aAccessData = null) {
 			
 			$oInstance = $this;
+			
+			$oInstance->bShowErrors = true;
 			
 			if ($aAccessData) {
 				$oInstance->sDatabaseType = 'mysqli';
@@ -70,6 +73,109 @@
 			if ($oInstance->sDatabaseType == 'mysqli') {
 				mysqli_close($oInstance->oDB);
 			}
+			
+		}
+		
+		
+		
+		
+		public function bUpdateTable ($sTableName, $aColumns = [], $sPrimaryKey = 'id') {
+			
+			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			$sTNE = '`' . $oInstance->sEscape($sTableName) . '`';
+			$sPKE = '`' . $oInstance->sEscape($sPrimaryKey) . '`';
+			
+			$bTemp = $oInstance->bShowErrors;
+			$oInstance->bShowErrors = false;
+			
+			$aExplain = $oInstance->aSelectQuery("EXPLAIN " . $sTNE . ";");
+			if (false === $aExplain) {
+				$oInstance->mQuery("
+					CREATE TABLE " . $sTNE . " (
+						" . $sPKE . " INT(9) NOT NULL AUTO_INCREMENT , PRIMARY KEY (" . $sPKE . ")
+					);
+				");
+				$oInstance->mQuery("
+					ALTER TABLE " . $sTNE . " AUTO_INCREMENT 1;
+				");
+				$aExplain = $oInstance->aSelectQuery("EXPLAIN " . $sTNE . ";");
+			}
+			
+			$oInstance->bShowErrors = $bTemp;
+			
+			$aOldColumns = [];
+			foreach ($aExplain as $oExplain) {
+				if ($oExplain->Field == 'id') continue;
+				$aOldColumns[$oExplain->Field] = [
+					'sName' => $oExplain->Field,
+					'sType' => $oExplain->Type,
+					'bNull' => $oExplain->Null == 'YES',
+					'sIndex' => $oExplain->Key,
+					'sDefault' => (($oExplain->Default == 'NULL') ? null : $oExplain->Default),
+					'sExtra' => strtoupper($oExplain->Extra),
+				];
+			}
+			
+			$sNewColumns = [];
+			foreach ($aColumns as $sName = $aColumn) {
+				$aNewColumns[$sName] = $aColumn;
+				foreach ($sField in ['sName','sType','sIndex','sExtra']) {
+					$aNewColumns[$sName][$sField] = strtoupper($aColumn[$sField]);
+				}
+			}
+			
+			$aDelete = [];
+			$aModify = [];
+			$aCreate = [];
+			
+			foreach ($aOldColumns as $sName => $aOldColumn) {
+				$aDelete[$sName] = true;
+			}
+			foreach ($aNewColumns as $sName => $aColumn) {
+				unset($aDelete[$sName]);
+				if (!isset($aOldColumns[$sName])) {
+					$aCreate[] = $sName;
+				} else {
+					$aOldColumn = $aOldColumns[$sName];
+					foreach ($aNewColumn as $sKey => $mValue) {
+						if ($aOldColumn[$sKey] != $mValue) {
+							$aModify []= $sName;
+						}
+					}
+				}
+			}
+			$aDelete = array_keys($aDelete);
+			
+			if (count($aDelete)) {
+				$oInstance->mQuery("ALTER TABLE " . $sTNE . " DROP " . implode(" , DROP ", $aDelete) . ";");
+			}
+			
+			if (count($aCreate)) {
+				$aAdds = [];
+				foreach ($aCreate as $sName) {
+					$aNewCol = $aNewColumns[$sName];
+					$aAdds []= "
+						ADD COLUMN `" . $aNewCol['sName'] . "`
+						" . $aNewCol['sType'] . "
+						" . ($aNewCol['bNull'] ? "NULL" : "NOT NULL") . "
+						" . (is_null($aNewCol['sDefault']) ? "" : "DEFAULT " . $oInstance->sEscape($aNewCol['sDefault'])) . "
+						" . $aNewCol['sExtra'] . "
+					";
+					if ($aNewCol['sIndex']) {
+						if ($aNewCol['sIndex'] == 'MUL') {
+							$aAdds []= "ADD INDEX " . $sName . " (" . $sName . ")";
+						}
+					}
+				}
+				$sQuery = "ALTER TABLE " . $sTNE . " " . implode(" , ", $aAdds);
+			}
+			
+			/// TODO: modify
+			
+			/// TODO: move columns
+			
+			ODT::vExit($aExplain);
 			
 		}
 		
@@ -145,11 +251,11 @@
 		
 		
 		
-		public function oSelectOne ($sTableName, $mWhere = array(), $sSelectFields = '*', $sSpecial = '') {
+		public function oSelectOne ($sTableName, $mWhere = array(), $sSelectFields = '*', $sExtra = '') {
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
-			$aRows = $oInstance->aSelect($sTableName, $mWhere, $sSelectFields, $sSpecial);
+			$aRows = $oInstance->aSelect($sTableName, $mWhere, $sSelectFields, $sExtra);
 			if (count($aRows) == 0) {
 				return null;
 			} else {
@@ -161,7 +267,7 @@
 		
 		
 		
-		public function aSelect ($sTableName, $mWhere = array(), $sSelectFields = '*', $sSpecial = '') {
+		public function aSelect ($sTableName, $mWhere = array(), $sSelectFields = '*', $sExtra = '') {
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
@@ -172,7 +278,7 @@
 			$sQuery = "
 				SELECT " . $sSelectFields . " FROM " . $sTableName . "
 				" . $sWhere . "
-				" . $sSpecial . "
+				" . $sExtra . "
 			";
 			
 			$oInstance->vLog($sQuery);
@@ -190,19 +296,23 @@
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
+			$aReturn = false;
+			
 			$oResult = $oInstance->mQuery($sQuery);
 			
 			if ($oResult === false) $oInstance->vAutoError();
 			
-			$aReturn = array();
-			while ($aRawRow = mysqli_fetch_array($oResult)) {
-				$oRow = new stdClass();
-				foreach ($aRawRow as $sKey => $sValue) {
-					if (is_string($sKey)) {
-						$oRow->$sKey = $sValue;
+			if ($oResult) {
+				$aReturn = array();
+				while ($aRawRow = mysqli_fetch_array($oResult)) {
+					$oRow = new stdClass();
+					foreach ($aRawRow as $sKey => $sValue) {
+						if (is_string($sKey)) {
+							$oRow->$sKey = $sValue;
+						}
 					}
+					$aReturn []= $oRow;
 				}
-				$aReturn []= $oRow;
 			}
 			
 			return $aReturn;
@@ -331,15 +441,22 @@
 		
 		
 		public function vAutoError () {
+			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			if (!$oInstance->bShowErrors) return;
+			
 			if (class_exists('\ODT')) {
-				if (get_class($oInstance->getDB()) == 'mysqli') {
-					$sError = $oInstance->getDB()->error;
+				if (get_class($oInstance->oGetDB()) == 'mysqli') {
+					$sError = $oInstance->oGetDB()->error;
 				} else {
-					$sError = $oInstance->getDB()->sql_error();
+					$sError = $oInstance->oGetDB()->sql_error();
 				}
+				\ODT::vDumpStack();
 				\ODT::ec('ERROR: ' . $sError);
+				\ODT::vEcho($oInstance->sLatestQuery);
 			}
+			
 		}
 		
 		
@@ -349,11 +466,16 @@
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
+			$sWhere = '';
+			
+			if (is_string($mWhere)) {
+				$sWhere = 'WHERE ' . $mWhere;
+			}
+			
 			if (is_numeric($mWhere)) {
 				$mWhere = array('id' => $mWhere);
 			}
 			
-			$aWhere = array($mWhere);
 			if (is_array($mWhere)) {
 				$aWhere = array();
 				foreach ($mWhere as $sKey => $mValue) {
@@ -366,18 +488,20 @@
 							foreach ($mValue as $sValue) {
 								$aValues []= "'" . $oInstance->sEscape($sValue) . "'";
 							}
-							$aWhere []= self::sProcessKey($sKey) . " IN (" . implode(',', $aValues) . ")";
+							if (count($aValues)) {
+								$aWhere []= self::sProcessKey($sKey) . " IN (" . implode(',', $aValues) . ")";
+							} else {
+								$aWhere []= '0';
+							}
 						}
 					} else {
 						$sValue = $mValue;
 						$aWhere []= self::sProcessKey($sKey) . "='" . $oInstance->sEscape($sValue) . "'";
 					}
 				}
-			}
-			
-			$sWhere = '';
-			if (count($aWhere)) {
-				$sWhere = "WHERE " . implode(" AND ", $aWhere);
+				if (count($aWhere)) {
+					$sWhere = "WHERE " . implode(" AND ", $aWhere);
+				}
 			}
 			
 			return $sWhere;
@@ -451,6 +575,10 @@
 		
 		
 		public function sEscape ($sInput) {
+if (!is_string($sInput) && !is_numeric($sInput)) {
+	ODT::vDumpStack();
+	ODT::vDump($sInput);
+}
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
 			
@@ -479,6 +607,8 @@
 		public function mQuery ($sQuery) {
 			
 			$oInstance = (isset($this) && get_class($this) == __CLASS__) ? $this : self::$oDefault;
+			
+			$oInstance->sLatestQuery = $sQuery;
 			
 			return $oInstance->oGetDB()->query($sQuery);
 			

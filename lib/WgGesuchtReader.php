@@ -14,36 +14,72 @@
 		
 		
 		
-		public static function vFetch () {
+		public static function vFetch ($bParse = true) {
 			
 			Curl::$oDefault->vSetCookieJarFile('store/cookie');
 			
-			$aDetailUrlsByList = array();
+			$aDetailUrlItems = self::aGetCurrentDetailUrlItems();
+			
+			foreach ($aDetailUrlItems as $oItem) {
+				
+				$sTime = date('Y-m-d H:i:s');
+				
+				$sListID = $oItem->sListID;
+				$sDetailUrl = $oItem->sUrl;
+				
+				$bFetch = true;
+				
+				$oLatestFetchedHtml = Ad::oGetLatestHtmlForUrl($sDetailUrl);
+				$oEarliestFetchedHtml = Ad::oGetEarliestHtmlForUrl($sDetailUrl);
+				if ($oLatestFetchedHtml && $oEarliestFetchedHtml) {
+					$nLatestAge = Utilitu::nDateDiff($oLatestFetchedHtml->fetched, 'now', 'hours');
+					$nEarliestAge = Utilitu::nDateDiff($oEarliestFetchedHtml->fetched, 'now', 'hours');
+					$bHalfHour = 0.5 < $nLatestAge;
+					$bManyHours = 16 < $nLatestAge;
+					$bDoubleTimePassed = $nEarliestAge < 2 * $nLatestAge;
+					if ( ! ($bManyHours || ($bHalfHour && $bDoubleTimePassed)) ) $bFetch = false;
+file_put_contents('fetch.log', $sDetailUrl . ' | ' . $nEarliestAge . ' - ' . $nLatestAge . ' | ' . ($bFetch ? 'true' : 'false') . "\n", FILE_APPEND);
+				}
+				
+				if ($bFetch) {
+					
+					$sDetailHtml = Curl::sGetTwice($sDetailUrl, 1.5);
+					
+					$iHtmlID = Ad::iSaveHtml($sListID, $sDetailUrl, $sDetailHtml, $sTime);
+					if ($bParse) $oAd = self::oParseHtml($iHtmlID);
+					
+				}
+				
+			}
+			
+		}
+		
+		
+		
+		
+		public static function aGetCurrentDetailUrlItems () {
+			
+			$aReturn = array();
+			
+			Curl::$oDefault->vSetCookieJarFile('store/cookie');
+			
 			$aListUrls = array(
-				'wg0' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.0.0.0.html?filter=bb469e0d555c453d123cbe951feef700938d503a025e2e0a3a',
+				'wg0' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.0.0.0.html',
 				'wg1' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.1.0.0.html',
 				'wg2' => 'http://' . self::$sDomain . '/wohnungen-in-Aachen.1.2.0.0.html',
 			);
 			foreach ($aListUrls as $sListID => $sListUrl) {
 				$sListHtml = Curl::sGet($sListUrl, 1.5);
-				$aDetailUrlsByList[$sListID] = self::aReadList($sListHtml);
+				$aListDetailUrls = self::aReadList($sListHtml);
+				foreach ($aListDetailUrls as $sDetailUrl) {
+					$oReturnItem = new StdClass();
+					$oReturnItem->sListID = $sListID;
+					$oReturnItem->sUrl = $sDetailUrl;
+					$aReturn []= $oReturnItem;
+				}
 			}
 			
-			foreach ($aDetailUrlsByList as $sListID => $aDetailUrls) {
-				
-				foreach ($aDetailUrls as $iNr => $sDetailUrl) {
-					
-					$sTime = date('Y-m-d H:i:s');
-					
-					$sDetailHtml = Curl::sGet($sDetailUrl, 1.5);
-					$sDetailHtml = Curl::sGet($sDetailUrl, 1.5);
-					
-					$iHtmlID = Ad::iInsertHtml($sListID, $sDetailUrl, $sDetailHtml, $sTime);
-					#$oAd = self::oParseAdHtml($iHtmlID);
-					
-				}
-				
-			}
+			return $aReturn;
 			
 		}
 		
@@ -77,8 +113,7 @@
 		public static function oParseHtml ($iHtmlID) {
 			
 			$oHtml = Ad::oGetHtml($iHtmlID);
-			$oAd = Ad::oGetByUrl($oHtml->url_hash);
-			if (!$oAd) $oAd = new Ad();
+			$oAd = new Ad();
 			
 			$oAd->oPage->iHtmlID = $oHtml->id;
 			$oAd->oPage->sListID = $oHtml->list;
@@ -171,6 +206,8 @@
 			}
 			
 			/// TODO: oContact
+			
+			Ad::iRemoveAdsByUrl($oHtml->url);
 			
 			$oAd->vSave();
 			
